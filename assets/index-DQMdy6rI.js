@@ -69,55 +69,73 @@
       <h2>🤖 AI 리뷰 답변 생성기</h2>
       <p>업종과 별점을 선택하고 리뷰를 붙여넣으세요</p>
     </div>
-    <div class="category-tabs" id="cat-tabs">
-      ${i.map(e=>`
-      <button class="tab-btn${e===f?` active`:``}" data-cat="${e}" id="tab-${e}">
-        ${a[e]} ${e}
-      </button>`).join(``)}
+    <div class="category-tabs" id="main-tabs">
+      <button class="tab-btn active" data-tab="generator">🤖 답변 생성기</button>
+      <button class="tab-btn" data-tab="brain-map">🕸️ 실시간 지능 지도</button>
     </div>
-    <div class="tool-card">
-      <div class="platform-section" style="margin-bottom: 24px;">
-        <label>주문 플랫폼</label>
-        <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 0;">
-          ${c.map(e=>`
-          <button class="tab-btn platform-btn${e===d?` active`:``}" data-plat="${e}" id="plat-${e}">
-            ${l[e]} ${e}
-          </button>`).join(``)}
+
+    <div id="generator-view">
+      <div class="category-tabs" id="cat-tabs">
+        ${i.map(e=>`
+        <button class="tab-btn${e===f?` active`:``}" data-cat="${e}" id="tab-${e}">
+          ${a[e]} ${e}
+        </button>`).join(``)}
+      </div>
+      <div class="tool-card">
+        <div class="platform-section" style="margin-bottom: 24px;">
+          <label>주문 플랫폼</label>
+          <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 0;">
+            ${c.map(e=>`
+            <button class="tab-btn platform-btn${e===d?` active`:``}" data-plat="${e}" id="plat-${e}">
+              ${l[e]} ${e}
+            </button>`).join(``)}
+          </div>
+        </div>
+        <div class="star-section">
+          <label>고객 별점</label>
+          <div class="star-selector" id="star-sel">
+            ${o.map(e=>`
+            <div class="star-option${e===p?` active`:``}" data-star="${e}" id="star-${e}" role="button" tabindex="0">
+              <span class="stars">${s[e]}</span>
+              <span class="star-num">${e}점</span>
+            </div>`).join(``)}
+          </div>
+        </div>
+        <div class="input-section">
+          <label>고객 리뷰 내용 (선택)</label>
+          <textarea class="review-input" id="review-input" placeholder="고객이 남긴 리뷰를 붙여넣으세요. 없으면 비워두셔도 됩니다." rows="4"></textarea>
+        </div>
+        <div class="keyword-section">
+          <label>핵심 키워드 (중복 선택 가능)</label>
+          <div class="keyword-tags" id="kw-tags">
+            ${r.map(e=>`<button class="keyword-tag" data-kw="${e}" id="kw-${e}">${e}</button>`).join(``)}
+          </div>
+        </div>
+        <button class="generate-btn" id="gen-btn">
+          <span class="btn-inner">
+            <span class="spinner"></span>
+            <span class="btn-text">✨ AI 답변 생성하기</span>
+          </span>
+        </button>
+        <div class="result-card" id="result-card">
+          <div class="result-header">
+            <span class="result-label">🤖 AI 생성 답변</span>
+            <button class="copy-btn" id="copy-btn">📋 복사</button>
+          </div>
+          <div class="result-body">
+            <p class="result-text" id="result-text"></p>
+          </div>
         </div>
       </div>
-      <div class="star-section">
-        <label>고객 별점</label>
-        <div class="star-selector" id="star-sel">
-          ${o.map(e=>`
-          <div class="star-option${e===p?` active`:``}" data-star="${e}" id="star-${e}" role="button" tabindex="0">
-            <span class="stars">${s[e]}</span>
-            <span class="star-num">${e}점</span>
-          </div>`).join(``)}
-        </div>
-      </div>
-      <div class="input-section">
-        <label>고객 리뷰 내용 (선택)</label>
-        <textarea class="review-input" id="review-input" placeholder="고객이 남긴 리뷰를 붙여넣으세요. 없으면 비워두셔도 됩니다." rows="4"></textarea>
-      </div>
-      <div class="keyword-section">
-        <label>핵심 키워드 (중복 선택 가능)</label>
-        <div class="keyword-tags" id="kw-tags">
-          ${r.map(e=>`<button class="keyword-tag" data-kw="${e}" id="kw-${e}">${e}</button>`).join(``)}
-        </div>
-      </div>
-      <button class="generate-btn" id="gen-btn">
-        <span class="btn-inner">
-          <span class="spinner"></span>
-          <span class="btn-text">✨ AI 답변 생성하기</span>
-        </span>
-      </button>
-      <div class="result-card" id="result-card">
-        <div class="result-header">
-          <span class="result-label">🤖 AI 생성 답변</span>
-          <button class="copy-btn" id="copy-btn">📋 복사</button>
-        </div>
-        <div class="result-body">
-          <p class="result-text" id="result-text"></p>
+    </div>
+
+    <div id="brain-map-view" style="display:none">
+      <div class="tool-card" style="padding:0; overflow:hidden; position:relative; min-height:500px;">
+        <div id="graph-container" style="width:100%; height:500px; background:#0d1117"></div>
+        <div class="graph-overlay">
+          <div class="section-tag">AI 실시간 지식 분석</div>
+          <h3>🕸️ GoodKorea Neural Network</h3>
+          <p>지식과 지식이 연결되어 거대한 지능을 형성합니다.</p>
         </div>
       </div>
     </div>
@@ -215,6 +233,6 @@
       <span class="history-time">${T(e.time)}</span>
       <button class="btn-sm btn-outline" style="cursor:pointer" onclick="navigator.clipboard.writeText(${JSON.stringify(e.reply)}).then(()=>showToast())">복사</button>
     </div>
-  </div>`).join(``)}}function A(){document.getElementById(`install-btn`)?.addEventListener(`click`,async()=>{if(!u){alert(`이미 설치되어 있거나 현재 브라우저에서 지원하지 않습니다.
+  </div>`).join(``)}}function A(){document.getElementById(`main-tabs`)?.addEventListener(`click`,e=>{let t=e.target.closest(`.tab-btn`);if(!t)return;let n=t.dataset.tab;document.querySelectorAll(`#main-tabs .tab-btn`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`),n===`generator`?(document.getElementById(`generator-view`).style.display=`block`,document.getElementById(`brain-map-view`).style.display=`none`):(document.getElementById(`generator-view`).style.display=`none`,document.getElementById(`brain-map-view`).style.display=`block`,M())}),document.getElementById(`install-btn`)?.addEventListener(`click`,async()=>{if(!u){alert(`이미 설치되어 있거나 현재 브라우저에서 지원하지 않습니다.
 브라우저 설정의 "홈 화면에 추가"를 이용해주세요!`);return}u.prompt();let{outcome:e}=await u.userChoice;e===`accepted`&&(u=null,document.getElementById(`install-btn`).style.display=`none`)}),document.getElementById(`share-fab`)?.addEventListener(`click`,()=>{document.getElementById(`share-modal`).style.display=`flex`}),document.getElementById(`copy-url-btn`)?.addEventListener(`click`,()=>{navigator.clipboard.writeText(window.location.href),j(`✅ 주소가 복사되었습니다!`),document.getElementById(`share-modal`).style.display=`none`}),document.getElementById(`kakao-btn`)?.addEventListener(`click`,()=>{alert(`카카오톡 공유 기능을 준비 중입니다.
-(카카오 개발자 키 설정이 필요합니다)`),document.getElementById(`share-modal`).style.display=`none`}),document.getElementById(`close-share`)?.addEventListener(`click`,()=>{document.getElementById(`share-modal`).style.display=`none`}),document.getElementById(`platform-tabs`).addEventListener(`click`,e=>{let t=e.target.closest(`.platform-btn`);t&&(d=t.dataset.plat,document.querySelectorAll(`.platform-btn`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`))}),document.getElementById(`cat-tabs`).addEventListener(`click`,e=>{let t=e.target.closest(`.tab-btn`);if(!t)return;f=t.dataset.cat,document.querySelectorAll(`.tab-btn`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`);let n=document.querySelector(`.promo-meta`);if(n){let e=new Date;n.textContent=`${e.getFullYear()}.${e.getMonth()+1}.${e.getDate()} · ${f} 맞춤 문구`}}),document.getElementById(`star-sel`).addEventListener(`click`,e=>{let t=e.target.closest(`.star-option`);t&&(p=parseInt(t.dataset.star),document.querySelectorAll(`.star-option`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`))}),document.getElementById(`kw-tags`).addEventListener(`click`,e=>{let t=e.target.closest(`.keyword-tag`);if(!t)return;let n=t.dataset.kw;m.has(n)?(m.delete(n),t.classList.remove(`active`)):(m.add(n),t.classList.add(`active`))}),document.getElementById(`gen-btn`).addEventListener(`click`,async()=>{if(h)return;h=!0;let e=document.getElementById(`gen-btn`);e.classList.add(`loading`),e.disabled=!0;let t=document.getElementById(`review-input`).value,n;try{n=await C(d,f,p,t,[...m])}catch(e){n=`[시스템 에러] AI 답변 생성에 실패했습니다.\n사유: ${e.message}\n(API 키가 유효한지 확인해주세요.)`}let r=document.getElementById(`result-card`),i=document.getElementById(`result-text`);i.textContent=n,r.style.display=`block`,setTimeout(()=>r.classList.add(`visible`),10),e.classList.remove(`loading`),e.disabled=!1,h=!1,r.scrollIntoView({behavior:`smooth`,block:`nearest`}),await x({id:Date.now().toString(),platform:d,category:f,star:p,keywords:[...m],reply:n,time:new Date().toISOString()}),k()}),document.getElementById(`copy-btn`).addEventListener(`click`,async()=>{let e=document.getElementById(`result-text`).textContent||``;await navigator.clipboard.writeText(e);let t=document.getElementById(`copy-btn`);t.textContent=`✅ 복사됨!`,t.classList.add(`copied`),j(),setTimeout(()=>{t.textContent=`📋 복사`,t.classList.remove(`copied`)},2e3)}),document.getElementById(`promo-gen-btn`).addEventListener(`click`,async()=>{let e=document.getElementById(`promo-gen-btn`),t=document.getElementById(`promo-result`);e.textContent=`⏳ 생성 중...`,e.disabled=!0,t.style.opacity=`0.5`;try{t.textContent=await w(f)}catch(e){t.textContent=`[시스템 에러] AI 문구 생성 실패: ${e.message}`}t.style.opacity=`1`,e.textContent=`✨ AI 문구 생성`,e.disabled=!1}),document.getElementById(`promo-copy-btn`).addEventListener(`click`,async()=>{let e=document.getElementById(`promo-result`).textContent||``;await navigator.clipboard.writeText(e),j()})}function j(e=`✅ 클립보드에 복사되었습니다!`){let t=document.getElementById(`toast`);t.textContent=e,t.classList.add(`show`),setTimeout(()=>t.classList.remove(`show`),2500)}window.copyText=e=>{let t=g.find(t=>t.id===e);t&&navigator.clipboard.writeText(t.reply).then(()=>j())},window.showToast=j,O();
+(카카오 개발자 키 설정이 필요합니다)`),document.getElementById(`share-modal`).style.display=`none`}),document.getElementById(`close-share`)?.addEventListener(`click`,()=>{document.getElementById(`share-modal`).style.display=`none`}),document.getElementById(`platform-tabs`).addEventListener(`click`,e=>{let t=e.target.closest(`.platform-btn`);t&&(d=t.dataset.plat,document.querySelectorAll(`.platform-btn`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`))}),document.getElementById(`cat-tabs`).addEventListener(`click`,e=>{let t=e.target.closest(`.tab-btn`);if(!t)return;f=t.dataset.cat,document.querySelectorAll(`.tab-btn`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`);let n=document.querySelector(`.promo-meta`);if(n){let e=new Date;n.textContent=`${e.getFullYear()}.${e.getMonth()+1}.${e.getDate()} · ${f} 맞춤 문구`}}),document.getElementById(`star-sel`).addEventListener(`click`,e=>{let t=e.target.closest(`.star-option`);t&&(p=parseInt(t.dataset.star),document.querySelectorAll(`.star-option`).forEach(e=>e.classList.remove(`active`)),t.classList.add(`active`))}),document.getElementById(`kw-tags`).addEventListener(`click`,e=>{let t=e.target.closest(`.keyword-tag`);if(!t)return;let n=t.dataset.kw;m.has(n)?(m.delete(n),t.classList.remove(`active`)):(m.add(n),t.classList.add(`active`))}),document.getElementById(`gen-btn`).addEventListener(`click`,async()=>{if(h)return;h=!0;let e=document.getElementById(`gen-btn`);e.classList.add(`loading`),e.disabled=!0;let t=document.getElementById(`review-input`).value,n;try{n=await C(d,f,p,t,[...m])}catch(e){n=`[시스템 에러] AI 답변 생성에 실패했습니다.\n사유: ${e.message}\n(API 키가 유효한지 확인해주세요.)`}let r=document.getElementById(`result-card`),i=document.getElementById(`result-text`);i.textContent=n,r.style.display=`block`,setTimeout(()=>r.classList.add(`visible`),10),e.classList.remove(`loading`),e.disabled=!1,h=!1,r.scrollIntoView({behavior:`smooth`,block:`nearest`}),await x({id:Date.now().toString(),platform:d,category:f,star:p,keywords:[...m],reply:n,time:new Date().toISOString()}),k()}),document.getElementById(`copy-btn`).addEventListener(`click`,async()=>{let e=document.getElementById(`result-text`).textContent||``;await navigator.clipboard.writeText(e);let t=document.getElementById(`copy-btn`);t.textContent=`✅ 복사됨!`,t.classList.add(`copied`),j(),setTimeout(()=>{t.textContent=`📋 복사`,t.classList.remove(`copied`)},2e3)}),document.getElementById(`promo-gen-btn`).addEventListener(`click`,async()=>{let e=document.getElementById(`promo-gen-btn`),t=document.getElementById(`promo-result`);e.textContent=`⏳ 생성 중...`,e.disabled=!0,t.style.opacity=`0.5`;try{t.textContent=await w(f)}catch(e){t.textContent=`[시스템 에러] AI 문구 생성 실패: ${e.message}`}t.style.opacity=`1`,e.textContent=`✨ AI 문구 생성`,e.disabled=!1}),document.getElementById(`promo-copy-btn`).addEventListener(`click`,async()=>{let e=document.getElementById(`promo-result`).textContent||``;await navigator.clipboard.writeText(e),j()})}function j(e=`✅ 클립보드에 복사되었습니다!`){let t=document.getElementById(`toast`);t.textContent=e,t.classList.add(`show`),setTimeout(()=>t.classList.remove(`show`),2500)}window.copyText=e=>{let t=g.find(t=>t.id===e);t&&navigator.clipboard.writeText(t.reply).then(()=>j())},window.showToast=j;function M(){let e=document.getElementById(`graph-container`);if(!e||e.initialized)return;e.initialized=!0;let t={nodes:[{id:`Index`,name:`🧠 GoodKorea Index`,val:20,color:`#ff6b35`},{id:`Strategy`,name:`🏛 Strategy`,val:12,color:`#ff9a3c`},{id:`Projects`,name:`🚀 Projects`,val:12,color:`#ff9a3c`},{id:`Technical`,name:`🛠 Technical`,val:10,color:`#64748b`},{id:`Marketing`,name:`📊 Marketing`,val:10,color:`#64748b`},{id:`Vision`,name:`🌟 Vision`,val:8,color:`#ffb86c`},{id:`MokjangMoksai`,name:`🍽 MokjangMoksai`,val:15,color:`#ff6b35`},{id:`Brain`,name:`🧠 Intelligence Map`,val:10,color:`#ff6b35`},{id:`GTM`,name:`🎯 GTM Strategy`,val:6,color:`#9ca3af`},{id:`Viral`,name:`🔥 Viral Script`,val:6,color:`#9ca3af`},{id:`Idea1`,name:`💡 First Idea`,val:5,color:`#22c55e`}],links:[{source:`Index`,target:`Strategy`},{source:`Index`,target:`Projects`},{source:`Index`,target:`Technical`},{source:`Index`,target:`Marketing`},{source:`Strategy`,target:`Vision`},{source:`Projects`,target:`MokjangMoksai`},{source:`Projects`,target:`Brain`},{source:`Marketing`,target:`GTM`},{source:`Marketing`,target:`Viral`},{source:`MokjangMoksai`,target:`Vision`},{source:`Brain`,target:`Idea1`},{source:`Idea1`,target:`Index`}]},n=document.createElement(`script`);n.src=`https://unpkg.com/force-graph`,n.onload=()=>{ForceGraph()(e).graphData(t).nodeLabel(`name`).nodeCanvasObject((e,t,n)=>{let r=e.name,i=12/n;t.font=`${i}px Inter`;let a=[t.measureText(r).width,i].map(e=>e+i*.2);t.fillStyle=`rgba(10, 11, 16, 0.8)`,t.fillRect(e.x-a[0]/2,e.y-a[1]/2,...a),t.textAlign=`center`,t.textBaseline=`middle`,t.fillStyle=e.color,t.fillText(r,e.x,e.y),e.__bckgDimensions=a}).linkColor(()=>`#ffffff11`).linkDirectionalParticles(2).linkDirectionalParticleSpeed(.005).backgroundColor(`#0d1117`)},document.head.appendChild(n)}O();

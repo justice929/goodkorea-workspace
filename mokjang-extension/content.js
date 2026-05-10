@@ -34,42 +34,68 @@ function injectMasterButton() {
   btn.onclick = async (e) => {
     e.preventDefault();
     const originalText = btn.innerHTML;
-    btn.innerHTML = '⏳ 화면의 리뷰를 스캔하고 작성 중입니다...';
-    btn.style.background = 'rgba(34, 197, 94, 0.9)'; // 녹색
+    btn.innerHTML = '⏳ 굿코리아 AI가 리뷰를 정밀 분석 중입니다...';
+    btn.style.background = 'rgba(34, 197, 94, 0.9)'; 
     
-    // 1. 화면 내 리뷰 컨테이너 스캔 (배민, 네이버, 요기요 등 범용 셀렉터 패턴)
-    const reviewContainers = document.querySelectorAll('div[class*="review"], li[class*="review"], div[class*="comment"]');
+    // 플랫폼별 최적화 셀렉터 맵핑 (네이버, 배민, 구글 등)
+    const selectors = {
+      reviewText: [
+        '.u_cbox_contents', 'div[class*="review-text"]', 'span[class*="comment-text"]', 
+        'div[class*="content_text"]', 'p[class*="text"]', '[data-review-text]'
+      ],
+      replyInput: [
+        'textarea', 'input[type="text"]', 'div[contenteditable="true"]',
+        '[placeholder*="답글"]', '[placeholder*="답변"]'
+      ],
+      container: [
+        'li[class*="review"]', 'div[class*="review_item"]', 'div[class*="comment_item"]',
+        'div[class*="ReplyItem"]', 'tr[class*="review"]'
+      ]
+    };
+
+    const findEl = (parent, sList) => {
+      for (const s of sList) {
+        const el = parent.querySelector(s);
+        if (el) return el;
+      }
+      return null;
+    };
+
+    // 1. 화면 내 모든 리뷰 아이템 스캔
+    const containers = document.querySelectorAll(selectors.container.join(', '));
     let processedCount = 0;
 
-    for (const container of reviewContainers) {
-      // 이미 답변이 달린 리뷰인지 체크 (가상의 로직)
-      const hasReply = container.querySelector('textarea, input[type="text"]') !== null;
-      if (!hasReply) continue;
+    for (const container of containers) {
+      // 이미 답변이 달렸거나 입력창이 없는 경우 스킵
+      const input = findEl(container, selectors.replyInput);
+      if (!input || input.value?.length > 10) continue; 
 
-      // 리뷰 텍스트 추출
-      const reviewTextEl = container.querySelector('p, span[class*="text"], div[class*="content"]');
-      const reviewText = reviewTextEl ? reviewTextEl.textContent : '';
+      // 리뷰 본문 추출
+      const textEl = findEl(container, selectors.reviewText);
+      const reviewContent = textEl ? textEl.textContent.trim() : '리뷰 내용 없음';
 
-      // (실제 서비스에서는 여기서 백그라운드 스크립트를 통해 Gemini API를 호출하여 답변을 받아옵니다)
-      // 현재는 UI 동작 검증용 시뮬레이션
-      
-      // 입력창(Textarea) 찾기 및 자동 입력
-      const replyInput = container.querySelector('textarea, input[type="text"]');
-      if (replyInput) {
-        (replyInput as HTMLTextAreaElement).value = `[먹장먹살 AI 자동생성] 고객님 안녕하세요! 소중한 리뷰 감사합니다. (스캔된 리뷰: ${reviewText?.substring(0,10)}...)`;
-        
-        // React/Vue 등 프레임워크의 이벤트를 트리거하기 위해 input 이벤트 발생
-        replyInput.dispatchEvent(new Event('input', { bubbles: true }));
-        replyInput.dispatchEvent(new Event('change', { bubbles: true }));
-        processedCount++;
+      // [핵심]: 여기서 백그라운드 스크립트(main.ts/Gemini)로 통신하여 실제 고퀄리티 답변 수령
+      // 현재는 UI 연동 로직 확립을 위한 오토필 시뮬레이션
+      const generatedReply = `[굿코리아 AI 정성 답변]\n고객님, 소중한 리뷰 감사합니다! ${reviewContent.substring(0, 20)}... 이 부분 특히 신경 썼는데 알아봐 주셔서 감동입니다. 앞으로도 굿코리아의 철학을 담아 최고의 맛과 서비스로 보답하겠습니다!`;
+
+      // 자동 입력 실행
+      if (input.tagName === 'DIV') {
+        input.innerHTML = generatedReply; // contenteditable 대응
+      } else {
+        input.value = generatedReply;
       }
+
+      // 프레임워크(React/Vue) 상태 동기화를 위한 이벤트 발생
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      processedCount++;
     }
 
     setTimeout(() => {
-      alert(`🎉 먹장먹살 오토매직 완료!\n총 ${processedCount}개의 리뷰에 정성스러운 답변이 자동 입력되었습니다.\n이제 사장님은 '등록' 버튼만 누르시면 됩니다.`);
+      alert(`🎉 [먹장먹살] 오토매직 완료!\n총 ${processedCount}개의 리뷰에 AI 정성 답변이 자동 입력되었습니다.\n내용 확인 후 '등록'만 눌러주세요!`);
       btn.innerHTML = originalText;
       btn.style.background = 'rgba(255, 107, 53, 0.9)';
-    }, 1500);
+    }, 1200);
   };
 
   document.body.appendChild(btn);

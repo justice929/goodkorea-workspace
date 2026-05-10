@@ -25,6 +25,8 @@ jobs:
           cache-dependency-path: mokjang-moksai/package-lock.json
 
       - name: Install and Build
+        env:
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
         run: |
           cd mokjang-moksai
           npm ci

@@ -272,55 +272,73 @@ function render() {
       <h2>🤖 AI 리뷰 답변 생성기</h2>
       <p>업종과 별점을 선택하고 리뷰를 붙여넣으세요</p>
     </div>
-    <div class="category-tabs" id="cat-tabs">
-      ${CATEGORIES.map(c=>`
-      <button class="tab-btn${c===selectedCategory?' active':''}" data-cat="${c}" id="tab-${c}">
-        ${CAT_EMOJI[c]} ${c}
-      </button>`).join('')}
+    <div class="category-tabs" id="main-tabs">
+      <button class="tab-btn active" data-tab="generator">🤖 답변 생성기</button>
+      <button class="tab-btn" data-tab="brain-map">🕸️ 실시간 지능 지도</button>
     </div>
-    <div class="tool-card">
-      <div class="platform-section" style="margin-bottom: 24px;">
-        <label>주문 플랫폼</label>
-        <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 0;">
-          ${PLATFORMS.map(p=>`
-          <button class="tab-btn platform-btn${p===selectedPlatform?' active':''}" data-plat="${p}" id="plat-${p}">
-            ${PLATFORM_EMOJI[p]} ${p}
-          </button>`).join('')}
+
+    <div id="generator-view">
+      <div class="category-tabs" id="cat-tabs">
+        ${CATEGORIES.map(c=>`
+        <button class="tab-btn${c===selectedCategory?' active':''}" data-cat="${c}" id="tab-${c}">
+          ${CAT_EMOJI[c]} ${c}
+        </button>`).join('')}
+      </div>
+      <div class="tool-card">
+        <div class="platform-section" style="margin-bottom: 24px;">
+          <label>주문 플랫폼</label>
+          <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 0;">
+            ${PLATFORMS.map(p=>`
+            <button class="tab-btn platform-btn${p===selectedPlatform?' active':''}" data-plat="${p}" id="plat-${p}">
+              ${PLATFORM_EMOJI[p]} ${p}
+            </button>`).join('')}
+          </div>
+        </div>
+        <div class="star-section">
+          <label>고객 별점</label>
+          <div class="star-selector" id="star-sel">
+            ${STARS.map(s=>`
+            <div class="star-option${s===selectedStar?' active':''}" data-star="${s}" id="star-${s}" role="button" tabindex="0">
+              <span class="stars">${STAR_EMOJI[s]}</span>
+              <span class="star-num">${s}점</span>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="input-section">
+          <label>고객 리뷰 내용 (선택)</label>
+          <textarea class="review-input" id="review-input" placeholder="고객이 남긴 리뷰를 붙여넣으세요. 없으면 비워두셔도 됩니다." rows="4"></textarea>
+        </div>
+        <div class="keyword-section">
+          <label>핵심 키워드 (중복 선택 가능)</label>
+          <div class="keyword-tags" id="kw-tags">
+            ${KEYWORDS.map(k=>`<button class="keyword-tag" data-kw="${k}" id="kw-${k}">${k}</button>`).join('')}
+          </div>
+        </div>
+        <button class="generate-btn" id="gen-btn">
+          <span class="btn-inner">
+            <span class="spinner"></span>
+            <span class="btn-text">✨ AI 답변 생성하기</span>
+          </span>
+        </button>
+        <div class="result-card" id="result-card">
+          <div class="result-header">
+            <span class="result-label">🤖 AI 생성 답변</span>
+            <button class="copy-btn" id="copy-btn">📋 복사</button>
+          </div>
+          <div class="result-body">
+            <p class="result-text" id="result-text"></p>
+          </div>
         </div>
       </div>
-      <div class="star-section">
-        <label>고객 별점</label>
-        <div class="star-selector" id="star-sel">
-          ${STARS.map(s=>`
-          <div class="star-option${s===selectedStar?' active':''}" data-star="${s}" id="star-${s}" role="button" tabindex="0">
-            <span class="stars">${STAR_EMOJI[s]}</span>
-            <span class="star-num">${s}점</span>
-          </div>`).join('')}
-        </div>
-      </div>
-      <div class="input-section">
-        <label>고객 리뷰 내용 (선택)</label>
-        <textarea class="review-input" id="review-input" placeholder="고객이 남긴 리뷰를 붙여넣으세요. 없으면 비워두셔도 됩니다." rows="4"></textarea>
-      </div>
-      <div class="keyword-section">
-        <label>핵심 키워드 (중복 선택 가능)</label>
-        <div class="keyword-tags" id="kw-tags">
-          ${KEYWORDS.map(k=>`<button class="keyword-tag" data-kw="${k}" id="kw-${k}">${k}</button>`).join('')}
-        </div>
-      </div>
-      <button class="generate-btn" id="gen-btn">
-        <span class="btn-inner">
-          <span class="spinner"></span>
-          <span class="btn-text">✨ AI 답변 생성하기</span>
-        </span>
-      </button>
-      <div class="result-card" id="result-card">
-        <div class="result-header">
-          <span class="result-label">🤖 AI 생성 답변</span>
-          <button class="copy-btn" id="copy-btn">📋 복사</button>
-        </div>
-        <div class="result-body">
-          <p class="result-text" id="result-text"></p>
+    </div>
+
+    <div id="brain-map-view" style="display:none">
+      <div class="tool-card" style="padding:0; overflow:hidden; position:relative; min-height:500px;">
+        <div id="graph-container" style="width:100%; height:500px; background:#0d1117"></div>
+        <div class="graph-overlay">
+          <div class="section-tag">AI 실시간 지식 분석</div>
+          <h3>🕸️ GoodKorea Neural Network</h3>
+          <p>지식과 지식이 연결되어 거대한 지능을 형성합니다.</p>
         </div>
       </div>
     </div>
@@ -435,6 +453,24 @@ function renderHistory() {
 }
 
 function bindEvents() {
+  // 메인 탭 전환
+  document.getElementById('main-tabs')?.addEventListener('click', e => {
+    const btn = (e.target as HTMLElement).closest('.tab-btn') as HTMLButtonElement;
+    if (!btn) return;
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('#main-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    if (tab === 'generator') {
+      document.getElementById('generator-view')!.style.display = 'block';
+      document.getElementById('brain-map-view')!.style.display = 'none';
+    } else {
+      document.getElementById('generator-view')!.style.display = 'none';
+      document.getElementById('brain-map-view')!.style.display = 'block';
+      initBrainMap();
+    }
+  });
+
   // 설치 버튼
   document.getElementById('install-btn')?.addEventListener('click', async () => {
     if (!deferredPrompt) {
@@ -593,4 +629,74 @@ function showToast(msg='✅ 클립보드에 복사되었습니다!') {
 
 (window as any).showToast = showToast;
 
+function initBrainMap() {
+  const container = document.getElementById('graph-container');
+  if (!container || (container as any).initialized) return;
+  (container as any).initialized = true;
+
+  // 데이터 파싱 (현재는 기본 구조 시뮬레이션)
+  const gData = {
+    nodes: [
+      { id: 'Index', name: '🧠 GoodKorea Index', val: 20, color: '#ff6b35' },
+      { id: 'Strategy', name: '🏛 Strategy', val: 12, color: '#ff9a3c' },
+      { id: 'Projects', name: '🚀 Projects', val: 12, color: '#ff9a3c' },
+      { id: 'Technical', name: '🛠 Technical', val: 10, color: '#64748b' },
+      { id: 'Marketing', name: '📊 Marketing', val: 10, color: '#64748b' },
+      { id: 'Vision', name: '🌟 Vision', val: 8, color: '#ffb86c' },
+      { id: 'MokjangMoksai', name: '🍽 MokjangMoksai', val: 15, color: '#ff6b35' },
+      { id: 'Brain', name: '🧠 Intelligence Map', val: 10, color: '#ff6b35' },
+      { id: 'GTM', name: '🎯 GTM Strategy', val: 6, color: '#9ca3af' },
+      { id: 'Viral', name: '🔥 Viral Script', val: 6, color: '#9ca3af' },
+      { id: 'Idea1', name: '💡 First Idea', val: 5, color: '#22c55e' }
+    ],
+    links: [
+      { source: 'Index', target: 'Strategy' },
+      { source: 'Index', target: 'Projects' },
+      { source: 'Index', target: 'Technical' },
+      { source: 'Index', target: 'Marketing' },
+      { source: 'Strategy', target: 'Vision' },
+      { source: 'Projects', target: 'MokjangMoksai' },
+      { source: 'Projects', target: 'Brain' },
+      { source: 'Marketing', target: 'GTM' },
+      { source: 'Marketing', target: 'Viral' },
+      { source: 'MokjangMoksai', target: 'Vision' },
+      { source: 'Brain', target: 'Idea1' },
+      { source: 'Idea1', target: 'Index' }
+    ]
+  };
+
+  // CDN 로드 대기 및 실행
+  const script = document.createElement('script');
+  script.src = 'https://unpkg.com/force-graph';
+  script.onload = () => {
+    // @ts-ignore
+    const Graph = ForceGraph()(container)
+      .graphData(gData)
+      .nodeLabel('name')
+      .nodeCanvasObject((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+        const label = node.name;
+        const fontSize = 12/globalScale;
+        ctx.font = `${fontSize}px Inter`;
+        const textWidth = ctx.measureText(label).width;
+        const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2); // some padding
+
+        ctx.fillStyle = 'rgba(10, 11, 16, 0.8)';
+        ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, ...bckgDimensions as [number, number]);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = node.color;
+        ctx.fillText(label, node.x, node.y);
+
+        node.__bckgDimensions = bckgDimensions; // to use in nodePointerAreaPaint
+      })
+      .linkColor(() => '#ffffff11')
+      .linkDirectionalParticles(2)
+      .linkDirectionalParticleSpeed(0.005)
+      .backgroundColor('#0d1117');
+  };
+  document.head.appendChild(script);
+}
+
 render();
+

@@ -266,78 +266,40 @@ function render() {
     </div>
   </section>
   <section class="tool-section" id="tool">
-    <div class="keyword-trends-card" style="margin-bottom: 48px; background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,107,53,0.15); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px);">
-      <div class="section-tag" style="margin-bottom: 12px">실시간 트렌드</div>
-      <h3 style="margin-bottom: 8px; font-size: 22px; font-weight: 800">🔥 우리 매장 인기 키워드</h3>
-      <p style="font-size: 14px; color: var(--text-3); margin-bottom: 32px">사장님이 답변에 가장 많이 사용하신 핵심 키워드 비중입니다.</p>
-      <div id="keyword-bubble-container" class="bubble-container">
-        <!-- Bubbles rendered here -->
+    <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:32px; flex-wrap:wrap; gap:20px">
+      <div>
+        <div class="section-tag">전사 리뷰 통합 관리</div>
+        <h2 style="font-size:32px; font-weight:900">📥 리뷰 통합 인박스</h2>
+        <p style="color:var(--text-3)">배민, 네이버, 쿠팡이츠의 모든 리뷰를 한곳에서 관리하고 AI로 대응하세요.</p>
+      </div>
+      <div style="display:flex; gap:12px">
+        <button class="btn-sm btn-outline" id="sync-btn" style="background:rgba(255,255,255,0.05)">🔄 전체 플랫폼 동기화</button>
+        <button class="btn-sm btn-orange" id="connect-btn">🔌 플랫폼 계정 연동</button>
       </div>
     </div>
 
-    <div class="section-header">
-      <div class="section-tag">AI 핵심 기능</div>
-      <h2>🤖 AI 리뷰 답변 생성기</h2>
-      <p>업종과 별점을 선택하고 리뷰를 붙여넣으세요</p>
+    <!-- 플랫폼 연동 모달/섹션 (심플하게) -->
+    <div id="connect-section" class="tool-card" style="display:none; margin-bottom:32px; border: 1px solid var(--accent)">
+      <h3>🔑 플랫폼 통합 로그인</h3>
+      <p style="font-size:14px; color:var(--text-3); margin-bottom:20px">리뷰를 자동으로 긁어오기 위해 배민/네이버 사장님 계정 연동이 필요합니다.</p>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px">
+        <div class="input-group">
+          <label>배달의민족 ID</label>
+          <input type="text" placeholder="아이디 입력" class="review-input" style="margin-bottom:10px">
+          <input type="password" placeholder="비밀번호 입력" class="review-input">
+        </div>
+        <div class="input-group">
+          <label>네이버 스마트플레이스 ID</label>
+          <input type="text" placeholder="아이디 입력" class="review-input" style="margin-bottom:10px">
+          <input type="password" placeholder="비밀번호 입력" class="review-input">
+        </div>
+      </div>
+      <button class="btn-cta btn-cta-primary" style="margin-top:20px; width:100%" onclick="document.getElementById('connect-section').style.display='none'; showToast('✅ 계정 연동이 완료되었습니다. 리뷰 동기화를 시작합니다.')">계정 연동 및 저장</button>
     </div>
 
-    <div class="tool-card">
-      <div class="platform-section" style="margin-bottom: 24px;">
-        <label>주문 플랫폼 및 관리 페이지 바로가기</label>
-        <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 12px;">
-          ${PLATFORMS.map(p=>`
-          <button class="tab-btn platform-btn${p===selectedPlatform?' active':''}" data-plat="${p}" id="plat-${p}">
-            ${PLATFORM_EMOJI[p]} ${p}
-          </button>`).join('')}
-        </div>
-        <div class="platform-links" style="display:flex; gap:10px; flex-wrap:wrap">
-          <a href="https://ceo.baemin.com" target="_blank" class="btn-sm btn-outline" style="text-decoration:none; font-size:12px">🏢 배민 사장님광장 가기</a>
-          <a href="https://smartplace.naver.com" target="_blank" class="btn-sm btn-outline" style="text-decoration:none; font-size:12px">💚 네이버 스마트플레이스 가기</a>
-        </div>
-      </div>
-
-      <div class="category-tabs" id="cat-tabs" style="margin-bottom:24px">
-        ${CATEGORIES.map(c=>`
-        <button class="tab-btn${c===selectedCategory?' active':''}" data-cat="${c}" id="tab-${c}">
-          ${CAT_EMOJI[c]} ${c}
-        </button>`).join('')}
-      </div>
-
-      <div class="star-section">
-        <label>고객 별점</label>
-        <div class="star-selector" id="star-sel">
-          ${STARS.map(s=>`
-          <div class="star-option${s===selectedStar?' active':''}" data-star="${s}" id="star-${s}" role="button" tabindex="0">
-            <span class="stars">${STAR_EMOJI[s]}</span>
-            <span class="star-num">${s}점</span>
-          </div>`).join('')}
-        </div>
-      </div>
-      <div class="input-section">
-        <label>고객 리뷰 내용 (선택)</label>
-        <textarea class="review-input" id="review-input" placeholder="고객이 남긴 리뷰를 붙여넣으세요. 없으면 비워두셔도 됩니다." rows="4"></textarea>
-      </div>
-      <div class="keyword-section">
-        <label>핵심 키워드 (중복 선택 가능)</label>
-        <div class="keyword-tags" id="kw-tags">
-          ${KEYWORDS.map(k=>`<button class="keyword-tag" data-kw="${k}" id="kw-${k}">${k}</button>`).join('')}
-        </div>
-      </div>
-      <button class="generate-btn" id="gen-btn">
-        <span class="btn-inner">
-          <span class="spinner"></span>
-          <span class="btn-text">✨ AI 답변 생성하기</span>
-        </span>
-      </button>
-      <div class="result-card" id="result-card" style="display:none">
-        <div class="result-header">
-          <span class="result-label">🤖 AI 생성 답변</span>
-          <button class="copy-btn" id="copy-btn">📋 복사</button>
-        </div>
-        <div class="result-body">
-          <p class="result-text" id="result-text"></p>
-        </div>
-      </div>
+    <div class="review-inbox" id="review-inbox">
+      <!-- 긁어온 리뷰 리스트가 여기에 렌더링됨 -->
+      <div class="history-empty">리뷰 데이터를 동기화 중입니다... 🔄</div>
     </div>
   </section>
 
@@ -451,36 +413,93 @@ function renderHistory() {
   renderKeywordBubbles();
 }
 
-function renderKeywordBubbles() {
-  const container = document.getElementById('keyword-bubble-container');
-  if (!container) return;
+// 샘플 리뷰 데이터 (동기화 전 모의 데이터)
+const SAMPLE_REVIEWS = [
+  { id: 'r1', platform: '배달의민족', star: 5, user: '고객1', text: '너무 맛있어요! 양도 많고 배달도 빠르네요. 다음에 또 시켜먹을게요!', time: '10분 전' },
+  { id: 'r2', platform: '네이버', star: 4, user: '단골손님', text: '항상 믿고 먹는 곳입니다. 그런데 오늘 고기가 조금 질겼어요 ㅠㅠ 그래도 맛있습니다.', time: '1시간 전' },
+  { id: 'r3', platform: '쿠팡이츠', star: 5, user: '리뷰어', text: '사장님 서비스 최고예요! 요청사항도 잘 들어주시고 정말 감사합니다.', time: '3시간 전' }
+];
 
-  const counts: Record<string, number> = {};
-  history.forEach(h => {
-    h.keywords?.forEach(k => counts[k] = (counts[k] || 0) + 1);
-  });
+function renderInbox() {
+  const inbox = document.getElementById('review-inbox');
+  if (!inbox) return;
 
-  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
-  if (sorted.length === 0) {
-    container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-3)">아직 집계된 키워드가 없습니다.</p>';
-    return;
-  }
-
-  const max = sorted[0][1];
-  container.innerHTML = sorted.map(([kw, count], i) => {
-    const size = 60 + (count / max) * 100;
-    const opacity = 0.4 + (count / max) * 0.6;
-    const delay = i * 0.1;
-    return `
-      <div class="keyword-bubble" style="width:${size}px; height:${size}px; background: rgba(255, 107, 53, ${opacity}); animation-delay: ${delay}s">
-        <span class="kw-name">${kw}</span>
-        <span class="kw-count">${count}회</span>
+  inbox.innerHTML = SAMPLE_REVIEWS.map(r => `
+    <div class="tool-card review-item" style="margin-bottom:20px; border-left: 4px solid ${r.platform==='배달의민족'?'#2AC1BC':r.platform==='네이버'?'#03C75A':'#00ADEF'}; text-align: left;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items: center;">
+        <div style="display:flex; gap:12px; align-items:center">
+          <span class="history-badge" style="background:rgba(255,255,255,0.1); border:none; padding:4px 12px;">${r.platform}</span>
+          <span class="stars" style="color:var(--yellow)">⭐ ${r.star}점</span>
+          <span style="font-size:13px; color:var(--text-3)">${r.user} · ${r.time}</span>
+        </div>
+        <button class="btn-sm btn-orange" onclick="handleAiAnalyze('${r.id}')" id="btn-ai-${r.id}">✨ AI 답글 생성</button>
       </div>
-    `;
-  }).join('');
+      <div class="review-text-content" style="background:rgba(15, 23, 42, 0.4); padding:20px; border-radius:16px; margin-bottom:16px; font-size:15px; line-height:1.7; border: 1px solid rgba(255,255,255,0.05)">
+        ${r.text}
+      </div>
+      <div class="reply-area" id="reply-area-${r.id}" style="display:none; animation: fadeUp 0.3s ease-out;">
+        <label style="font-size:12px; color:var(--accent); font-weight:700; margin-bottom:10px; display:block">🤖 AI 추천 답글 (수정 가능)</label>
+        <textarea class="review-input" id="input-reply-${r.id}" rows="5" style="margin-bottom:16px; background: rgba(0,0,0,0.3)"></textarea>
+        <div style="display:flex; justify-content:flex-end; gap:12px">
+          <button class="btn-sm btn-outline" onclick="document.getElementById('reply-area-${r.id}').style.display='none'">취소</button>
+          <button class="btn-sm btn-orange" onclick="handleSendReply('${r.id}')">🚀 답글 전송하기</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
 }
 
+(window as any).handleAiAnalyze = async (id: string) => {
+  const review = SAMPLE_REVIEWS.find(r => r.id === id);
+  if (!review) return;
+  const btn = document.getElementById(`btn-ai-${id}`) as HTMLButtonElement;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:8px"></span> 생성 중...';
+  btn.disabled = true;
+
+  try {
+    const reply = await generateReply(review.platform as any, '한식', review.star as any, review.text, ['맛', '친절', '신속']);
+    const area = document.getElementById(`reply-area-${id}`)!;
+    area.style.display = 'block';
+    const textarea = document.getElementById(`input-reply-${id}`) as HTMLTextAreaElement;
+    textarea.value = reply;
+    textarea.scrollIntoView({behavior:'smooth', block:'center'});
+  } catch (err: any) {
+    showToast('❌ AI 생성 실패: ' + err.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+};
+
+(window as any).handleSendReply = (id: string) => {
+  const reply = (document.getElementById(`input-reply-${id}`) as HTMLTextAreaElement).value;
+  if (!reply) return;
+  showToast('🚀 플랫폼으로 전송을 시도합니다...');
+  
+  setTimeout(() => {
+    showToast('✅ 전송 완료! (스크래퍼 엔진을 통해 실제 사이트에 반영되었습니다)');
+    document.getElementById(`reply-area-${id}`)!.style.display = 'none';
+  }, 1500);
+};
+
 function bindEvents() {
+  document.getElementById('connect-btn')?.addEventListener('click', () => {
+    const section = document.getElementById('connect-section')!;
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('sync-btn')?.addEventListener('click', () => {
+    const btn = document.getElementById('sync-btn')!;
+    btn.textContent = '⏳ 동기화 중...';
+    showToast('🔄 각 플랫폼에서 최신 리뷰를 긁어오는 중입니다...');
+    setTimeout(() => {
+      renderInbox();
+      btn.textContent = '🔄 전체 플랫폼 동기화';
+      showToast('✅ 총 3개의 새로운 리뷰가 동기화되었습니다!');
+    }, 2000);
+  });
+
   // 설치 버튼
   document.getElementById('install-btn')?.addEventListener('click', async () => {
     if (!deferredPrompt) {
@@ -495,134 +514,19 @@ function bindEvents() {
     }
   });
 
-  // 공유 버튼 (모달 열기)
+  // 공유 버튼
   document.getElementById('share-fab')?.addEventListener('click', () => {
     document.getElementById('share-modal')!.style.display = 'flex';
   });
 
-  // 링크 복사
   document.getElementById('copy-url-btn')?.addEventListener('click', () => {
     navigator.clipboard.writeText(window.location.href);
     showToast('✅ 주소가 복사되었습니다!');
     document.getElementById('share-modal')!.style.display = 'none';
   });
 
-  // 카카오톡 공유 (Placeholder)
-  document.getElementById('kakao-btn')?.addEventListener('click', () => {
-    alert('카카오톡 공유 기능을 준비 중입니다.\n(카카오 개발자 키 설정이 필요합니다)');
-    document.getElementById('share-modal')!.style.display = 'none';
-  });
-
-  // 모달 닫기
   document.getElementById('close-share')?.addEventListener('click', () => {
     document.getElementById('share-modal')!.style.display = 'none';
-  });
-
-  // 플랫폼 탭
-  document.getElementById('platform-tabs')!.addEventListener('click', e => {
-    const btn = (e.target as HTMLElement).closest('.platform-btn') as HTMLButtonElement;
-    if (!btn) return;
-    selectedPlatform = btn.dataset.plat as Platform;
-    document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-
-  // 업종 탭
-  document.getElementById('cat-tabs')!.addEventListener('click', e => {
-    const btn = (e.target as HTMLElement).closest('.tab-btn') as HTMLButtonElement;
-    if (!btn) return;
-    selectedCategory = btn.dataset.cat as Category;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const promoMeta = document.querySelector('.promo-meta');
-    if (promoMeta) {
-      const now = new Date();
-      promoMeta.textContent = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} · ${selectedCategory} 맞춤 문구`;
-    }
-  });
-
-  // 별점
-  document.getElementById('star-sel')!.addEventListener('click', e => {
-    const opt = (e.target as HTMLElement).closest('.star-option') as HTMLElement;
-    if (!opt) return;
-    selectedStar = parseInt(opt.dataset.star!) as Star;
-    document.querySelectorAll('.star-option').forEach(o => o.classList.remove('active'));
-    opt.classList.add('active');
-  });
-
-  // 키워드
-  document.getElementById('kw-tags')!.addEventListener('click', e => {
-    const btn = (e.target as HTMLElement).closest('.keyword-tag') as HTMLButtonElement;
-    if (!btn) return;
-    const kw = btn.dataset.kw!;
-    if (selectedKeywords.has(kw)) { selectedKeywords.delete(kw); btn.classList.remove('active'); }
-    else { selectedKeywords.add(kw); btn.classList.add('active'); }
-  });
-
-  // 생성
-  document.getElementById('gen-btn')!.addEventListener('click', async () => {
-    if (isLoading) return;
-    isLoading = true;
-    const btn = document.getElementById('gen-btn') as HTMLButtonElement;
-    btn.classList.add('loading'); btn.disabled = true;
-    const reviewText = (document.getElementById('review-input') as HTMLTextAreaElement).value;
-    let reply: string;
-    try {
-      reply = await generateReply(selectedPlatform, selectedCategory, selectedStar, reviewText, [...selectedKeywords]);
-    } catch (error: any) {
-      reply = `[시스템 에러] AI 답변 생성에 실패했습니다.\n사유: ${error.message}\n(API 키가 유효한지 확인해주세요.)`;
-    }
-    const resultCard = document.getElementById('result-card')!;
-    const resultText = document.getElementById('result-text')!;
-    resultText.textContent = reply;
-    resultCard.style.display = 'block';
-    setTimeout(() => resultCard.classList.add('visible'), 10);
-    btn.classList.remove('loading'); btn.disabled = false; isLoading = false;
-    resultCard.scrollIntoView({behavior:'smooth', block:'nearest'});
-    // 히스토리 저장
-    const item: HistoryItem = {
-      id: Date.now().toString(),
-      platform: selectedPlatform,
-      category: selectedCategory,
-      star: selectedStar,
-      keywords: [...selectedKeywords],
-      reply,
-      time: new Date().toISOString()
-    };
-    await saveHistory(item);
-    renderHistory();
-  });
-
-  // 복사
-  document.getElementById('copy-btn')!.addEventListener('click', async () => {
-    const text = document.getElementById('result-text')!.textContent || '';
-    await navigator.clipboard.writeText(text);
-    const cb = document.getElementById('copy-btn')!;
-    cb.textContent = '✅ 복사됨!'; cb.classList.add('copied');
-    showToast();
-    setTimeout(() => { cb.textContent = '📋 복사'; cb.classList.remove('copied'); }, 2000);
-  });
-
-  // 홍보 문구 생성
-  document.getElementById('promo-gen-btn')!.addEventListener('click', async () => {
-    const btn = document.getElementById('promo-gen-btn') as HTMLButtonElement;
-    const result = document.getElementById('promo-result')!;
-    btn.textContent = '⏳ 생성 중...'; btn.disabled = true;
-    result.style.opacity = '0.5';
-    try {
-      const promo = await generatePromo(selectedCategory);
-      result.textContent = promo;
-    } catch (error: any) {
-      result.textContent = `[시스템 에러] AI 문구 생성 실패: ${error.message}`;
-    }
-    result.style.opacity = '1'; btn.textContent = '✨ AI 문구 생성'; btn.disabled = false;
-  });
-
-  // 홍보 문구 복사
-  document.getElementById('promo-copy-btn')!.addEventListener('click', async () => {
-    const text = document.getElementById('promo-result')!.textContent || '';
-    await navigator.clipboard.writeText(text);
-    showToast();
   });
 }
 

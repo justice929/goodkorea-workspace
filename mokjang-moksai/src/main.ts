@@ -579,5 +579,22 @@ function showToast(msg='✅ 클립보드에 복사되었습니다!') {
 
 (window as any).showToast = showToast;
 
-render();
+// 초기화 및 자동화 실행
+async function initApp() {
+  render();
+  renderInbox();
+  bindEvents();
+
+  // [완전 자동화] 페이지 로드 시 즉시 동기화 및 AI 분석 시작
+  showToast('🚀 실시간 리뷰 동기화 및 AI 분석을 시작합니다...');
+  
+  setTimeout(async () => {
+    // 모든 리뷰에 대해 자동으로 AI 답글 생성 실행
+    const analyzePromises = SAMPLE_REVIEWS.map(r => (window as any).handleAiAnalyze(r.id));
+    await Promise.all(analyzePromises);
+    showToast('✨ 모든 리뷰에 대한 AI 분석이 완료되었습니다.');
+  }, 800);
+}
+
+initApp();
 

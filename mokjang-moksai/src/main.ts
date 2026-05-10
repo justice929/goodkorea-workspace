@@ -299,15 +299,20 @@ function render() {
               <span class="status-dot" style="width:8px; height:8px; background:#444; border-radius:50%"></span>
             </div>
             <div class="input-group" style="margin-bottom:12px">
-              <input type="text" id="id-${p}" placeholder="${p} 업체 ID (또는 주소)" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${p}`) || ''}">
-              <input type="password" id="pw-${p}" placeholder="비밀번호 (선택사항)" class="review-input" style="padding:12px; font-size:13px" value="${localStorage.getItem(`pw-${p}`) || ''}">
+              <input type="text" id="id-input-${p}" placeholder="${p} 업체 ID" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${p}`) || ''}">
+              <input type="password" id="pw-input-${p}" placeholder="비밀번호 (선택사항)" class="review-input" style="padding:12px; font-size:13px" value="${localStorage.getItem(`pw-${p}`) || ''}">
             </div>
-            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${p}', document.getElementById('id-${p}').value); localStorage.setItem('pw-${p}', document.getElementById('pw-${p}').value); (window as any).showToast('✅ ${p} 계정 정보가 저장되었습니다.')">저장하기</button>
+            <button class="btn-sm btn-orange" style="width:100%; border-radius:10px; font-size:12px" onclick="(window as any).handleSavePlatform('${p}')">설정 저장하기</button>
           </div>
         `).join('')}
       </div>
-      <div style="margin-top:32px; padding-top:24px; border-top: 1px solid rgba(255,255,255,0.05); text-align:center">
-        <button class="btn-cta btn-cta-primary" style="width: auto; padding: 14px 60px;" onclick="document.getElementById('connect-section').style.display='none'; showToast('🚀 모든 플랫폼 연동 설정이 저장되었습니다.')">설정 완료 및 대시보드로 돌아가기</button>
+      <div style="margin-top:32px; padding:24px; border-radius:20px; background:rgba(255,107,53,0.1); border:1px dashed var(--accent); text-align:center">
+        <p style="font-size:14px; margin-bottom:16px; color:var(--accent-2)">⚠️ 핸드폰/브라우저 연결이 안 되시나요?</p>
+        <button class="btn-sm btn-outline" style="background:white; color:black; font-weight:800" onclick="window.open('http://192.168.219.107:8000/', '_blank')">1단계: 서버 연결 허용하러 가기</button>
+        <p style="font-size:11px; margin-top:12px; color:var(--text-3)">* 위 버튼을 눌러 "사이트 연결"이 확인되면 뒤로 돌아와 동기화를 눌러주세요.</p>
+      </div>
+      <div style="margin-top:32px; text-align:center">
+        <button class="btn-cta btn-cta-primary" style="width: auto; padding: 14px 60px;" onclick="document.getElementById('connect-section').style.display='none'; (window as any).showToast('🚀 설정이 완료되었습니다.')">설정 완료 및 닫기</button>
       </div>
     </div>
 
@@ -619,6 +624,14 @@ function showToast(msg='✅ 클립보드에 복사되었습니다!') {
 (window as any).copyText = (id: string) => {
   const item = history.find(h => h.id === id);
   if (item) navigator.clipboard.writeText(item.reply).then(() => showToast());
+};
+
+(window as any).handleSavePlatform = (p: string) => {
+  const id = (document.getElementById(`id-input-${p}`) as HTMLInputElement).value;
+  const pw = (document.getElementById(`pw-input-${p}`) as HTMLInputElement).value;
+  localStorage.setItem(`id-${p}`, id);
+  localStorage.setItem(`pw-${p}`, pw);
+  showToast(`✅ ${p} 정보가 저장되었습니다!`);
 };
 
 (window as any).showToast = showToast;

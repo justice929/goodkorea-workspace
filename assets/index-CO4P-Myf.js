@@ -62,7 +62,6 @@
       </div>`).join(``)}
     </div>
   </section>
-
   <section class="tool-section" id="tool">
     <div class="keyword-trends-card" style="margin-bottom: 48px; background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,107,53,0.15); border-radius: 24px; padding: 32px; backdrop-filter: blur(10px);">
       <div class="section-tag" style="margin-bottom: 12px">실시간 트렌드</div>
@@ -78,22 +77,29 @@
       <h2>🤖 AI 리뷰 답변 생성기</h2>
       <p>업종과 별점을 선택하고 리뷰를 붙여넣으세요</p>
     </div>
-    <div class="category-tabs" id="cat-tabs">
-      ${i.map(e=>`
-      <button class="tab-btn${e===f?` active`:``}" data-cat="${e}" id="tab-${e}">
-        ${a[e]} ${e}
-      </button>`).join(``)}
-    </div>
+
     <div class="tool-card">
       <div class="platform-section" style="margin-bottom: 24px;">
-        <label>주문 플랫폼</label>
-        <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 0;">
+        <label>주문 플랫폼 및 관리 페이지 바로가기</label>
+        <div class="category-tabs" id="platform-tabs" style="justify-content: flex-start; margin-bottom: 12px;">
           ${c.map(e=>`
           <button class="tab-btn platform-btn${e===d?` active`:``}" data-plat="${e}" id="plat-${e}">
             ${l[e]} ${e}
           </button>`).join(``)}
         </div>
+        <div class="platform-links" style="display:flex; gap:10px; flex-wrap:wrap">
+          <a href="https://ceo.baemin.com" target="_blank" class="btn-sm btn-outline" style="text-decoration:none; font-size:12px">🏢 배민 사장님광장 가기</a>
+          <a href="https://smartplace.naver.com" target="_blank" class="btn-sm btn-outline" style="text-decoration:none; font-size:12px">💚 네이버 스마트플레이스 가기</a>
+        </div>
       </div>
+
+      <div class="category-tabs" id="cat-tabs" style="margin-bottom:24px">
+        ${i.map(e=>`
+        <button class="tab-btn${e===f?` active`:``}" data-cat="${e}" id="tab-${e}">
+          ${a[e]} ${e}
+        </button>`).join(``)}
+      </div>
+
       <div class="star-section">
         <label>고객 별점</label>
         <div class="star-selector" id="star-sel">
@@ -120,7 +126,7 @@
           <span class="btn-text">✨ AI 답변 생성하기</span>
         </span>
       </button>
-      <div class="result-card" id="result-card">
+      <div class="result-card" id="result-card" style="display:none">
         <div class="result-header">
           <span class="result-label">🤖 AI 생성 답변</span>
           <button class="copy-btn" id="copy-btn">📋 복사</button>

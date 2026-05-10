@@ -3,6 +3,34 @@ import './style.css'
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
+// [Global Helpers] - Move to top for reliability
+(window as any).showToast = (msg='✅ 완료되었습니다!') => {
+  const t = document.getElementById('toast');
+  if (t) {
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+};
+
+(window as any).handleSavePlatform = (p: string) => {
+  const idEl = document.getElementById(`id-input-${p}`) as HTMLInputElement;
+  const pwEl = document.getElementById(`pw-input-${p}`) as HTMLInputElement;
+  if (idEl && pwEl) {
+    localStorage.setItem(`id-${p}`, idEl.value);
+    localStorage.setItem(`pw-${p}`, pwEl.value);
+    (window as any).showToast(`✅ ${p} 정보가 저장되었습니다!`);
+  }
+};
+
+(window as any).updateBackendUrl = () => {
+  const urlEl = document.getElementById('backend-url-input') as HTMLInputElement;
+  if (urlEl) {
+    localStorage.setItem('backend-url', urlEl.value);
+    (window as any).showToast('⚙️ 백엔드 주소가 변경되었습니다.');
+    setTimeout(() => location.reload(), 1000);
+  }
+};
+
 type Category = '한식'|'중식'|'일식'|'카페'|'분식'|'양식'|'치킨'|'피자'|'고기';
 type Star = 1|2|3|4|5;
 type Platform = '배달의민족'|'요기요'|'쿠팡이츠'|'네이버'|'구글'|'기타';
@@ -302,17 +330,21 @@ function render() {
               <input type="text" id="id-input-${p}" placeholder="${p} 업체 ID" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${p}`) || ''}">
               <input type="password" id="pw-input-${p}" placeholder="비밀번호 (선택사항)" class="review-input" style="padding:12px; font-size:13px" value="${localStorage.getItem(`pw-${p}`) || ''}">
             </div>
-            <button class="btn-sm btn-orange" style="width:100%; border-radius:10px; font-size:12px" onclick="(window as any).handleSavePlatform('${p}')">설정 저장하기</button>
+            <button class="btn-sm btn-orange btn-save-platform" data-platform="${p}" style="width:100%; border-radius:10px; font-size:12px">설정 저장하기</button>
           </div>
         `).join('')}
       </div>
-      <div style="margin-top:32px; padding:24px; border-radius:20px; background:rgba(255,107,53,0.1); border:1px dashed var(--accent); text-align:center">
-        <p style="font-size:14px; margin-bottom:16px; color:var(--accent-2)">⚠️ 핸드폰/브라우저 연결이 안 되시나요?</p>
-        <button class="btn-sm btn-outline" style="background:white; color:black; font-weight:800" onclick="window.open('http://192.168.219.107:8000/', '_blank')">1단계: 서버 연결 허용하러 가기</button>
-        <p style="font-size:11px; margin-top:12px; color:var(--text-3)">* 위 버튼을 눌러 "사이트 연결"이 확인되면 뒤로 돌아와 동기화를 눌러주세요.</p>
+      <div style="margin-top:32px; padding:24px; border-radius:20px; background:rgba(255,107,53,0.1); border:1px dashed var(--accent); text-align:left">
+        <p style="font-size:16px; font-weight:800; margin-bottom:12px; color:var(--accent-2)">⚙️ 고급 연결 설정 (연결 안 될 때만 수정)</p>
+        <div style="display:flex; gap:10px">
+          <input type="text" id="backend-url-input" class="review-input" style="flex:1" value="${localStorage.getItem('backend-url') || 'http://192.168.219.107:8000'}">
+          <button class="btn-sm btn-orange" onclick="(window as any).updateBackendUrl()">주소 저장</button>
+        </div>
+        <p style="font-size:11px; margin-top:12px; color:var(--text-3)">* "서버 연결 확인 필요" 에러가 뜨면, 사장님 PC의 현재 IP주소로 변경해 주세요.</p>
+        <button class="btn-sm btn-outline" style="width:100%; margin-top:16px; background:white; color:black; font-weight:800" onclick="window.open((localStorage.getItem('backend-url') || 'http://192.168.219.107:8000') + '/', '_blank')">🔗 1단계: 서버 연결 수동 허용하기</button>
       </div>
       <div style="margin-top:32px; text-align:center">
-        <button class="btn-cta btn-cta-primary" style="width: auto; padding: 14px 60px;" onclick="document.getElementById('connect-section').style.display='none'; (window as any).showToast('🚀 설정이 완료되었습니다.')">설정 완료 및 닫기</button>
+        <button class="btn-cta btn-cta-primary" style="width: auto; padding: 14px 60px;" onclick="document.getElementById('connect-section').style.display='none'">설정 완료 및 닫기</button>
       </div>
     </div>
 
@@ -440,13 +472,12 @@ let liveReviews: any[] = [
 
 async function syncWithBackend() {
   const naverId = localStorage.getItem('id-네이버');
-  if (!naverId) {
-    console.log('Naver ID not set, skipping sync.');
-    return false;
-  }
+  const backendUrl = localStorage.getItem('backend-url') || 'http://192.168.219.107:8000';
+  
+  if (!naverId) return false;
   
   try {
-    const response = await fetch('http://192.168.219.107:8000/scrape', {
+    const response = await fetch(`${backendUrl}/scrape`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ platform: 'naver', target_id: naverId })
@@ -454,19 +485,35 @@ async function syncWithBackend() {
     const result = await response.json();
     if (result.status === 'success' && result.data.length > 0) {
       liveReviews = [...result.data, ...liveReviews.filter(r => r.platform !== '네이버')];
-      showToast('✅ 네이버 실시간 리뷰 동기화 성공!');
+      (window as any).showToast('✅ 네이버 실시간 리뷰 동기화 성공!');
       renderInbox();
       return true;
     }
   } catch (err) {
     console.warn('Backend offline or error:', err);
-    if (window.location.protocol === 'https:') {
-      showToast('⚠️ 보안(HTTPS) 문제로 백엔드 연결이 차단되었을 수 있습니다. 주소창의 방패 아이콘을 눌러 "안전하지 않은 콘텐츠 허용"을 해주세요.');
-    }
     return false;
   }
   return false;
 }
+
+// [Heartbeat] Check server status every 5s
+async function checkServerStatus() {
+  const backendUrl = localStorage.getItem('backend-url') || 'http://192.168.219.107:8000';
+  const dot = document.querySelector('.nav-badge .dot') as HTMLElement;
+  try {
+    const res = await fetch(`${backendUrl}/`, { method: 'GET' });
+    if (res.ok && dot) {
+      dot.style.background = '#10b981'; // Green
+      dot.style.boxShadow = '0 0 10px #10b981';
+    }
+  } catch {
+    if (dot) {
+      dot.style.background = '#ef4444'; // Red
+      dot.style.boxShadow = '0 0 10px #ef4444';
+    }
+  }
+}
+setInterval(checkServerStatus, 5000);
 
 function renderInbox() {
   const inbox = document.getElementById('review-inbox');
@@ -612,6 +659,16 @@ function bindEvents() {
 
   document.getElementById('close-share')?.addEventListener('click', () => {
     document.getElementById('share-modal')!.style.display = 'none';
+  });
+
+  // [New] 플랫폼 저장 버튼 이벤트 위임 (Delegation)
+  document.getElementById('connect-section')?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const btn = target.closest('.btn-save-platform');
+    if (btn) {
+      const p = btn.getAttribute('data-platform');
+      if (p) (window as any).handleSavePlatform(p);
+    }
   });
 }
 

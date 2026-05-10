@@ -43,14 +43,10 @@ const STRATEGY: Record<Star,{tone:string;action:string}> = {
   1:{tone:'최우선 사과, 즉각적 해결 의지',action:'깊은 사과 + 직접 연락 유도'},
 };
 
-const KEYWORDS = ['맛','가격','배달속도','양','서비스','위생','신선도','재방문','포장','주차','친절','분위기','대기시간','메뉴다양성','가성비','청결'];
-const CATEGORIES: Category[] = ['한식','중식','일식','카페','분식','양식','치킨','피자','고기'];
 const CAT_EMOJI: Record<Category,string> = {한식:'🍚',중식:'🥢',일식:'🍣',카페:'☕',분식:'🥙',양식:'🍝',치킨:'🍗',피자:'🍕',고기:'🥩'};
-const STARS: Star[] = [1,2,3,4,5];
-const STAR_EMOJI: Record<Star,string> = {1:'⭐',2:'⭐⭐',3:'⭐⭐⭐',4:'⭐⭐⭐⭐',5:'⭐⭐⭐⭐⭐'};
+const STAR_EMOJI: Record<string,string> = {'1':'⭐','2':'⭐⭐','3':'⭐⭐⭐','4':'⭐⭐⭐⭐','5':'⭐⭐⭐⭐⭐'};
 
-const PLATFORMS: Platform[] = ['배달의민족','요기요','쿠팡이츠','네이버','구글','기타'];
-const PLATFORM_EMOJI: Record<Platform,string> = {'배달의민족':'🛵','요기요':'🚴','쿠팡이츠':'🚀','네이버':'✅','구글':'🔍','기타':'🍽️'};
+
 
 interface HistoryItem {
   id: string;
@@ -63,11 +59,6 @@ interface HistoryItem {
 }
 
 let deferredPrompt: any = null;
-let selectedPlatform: Platform = '배달의민족';
-let selectedCategory: Category = '한식';
-let selectedStar: Star = 5;
-let selectedKeywords: Set<string> = new Set();
-let isLoading = false;
 let history: HistoryItem[] = [];
 
 // PWA 설치 프로프트 리스너
@@ -195,18 +186,7 @@ async function generateReply(platform: Platform, category: Category, star: Star,
   return callGemini(prompt);
 }
 
-async function generatePromo(category: Category): Promise<string> {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  const hour = now.getHours();
-  const season = month>=3&&month<=5?'봄':month>=6&&month<=8?'여름':month>=9&&month<=11?'가을':'겨울';
-  const timeSlot = hour<11?'아침':hour<14?'점심':hour<17?'오후':hour<20?'저녁':'밤';
-  const prompt = `${season} ${month}월 ${day}일 ${timeSlot} 시간대에 맞는 ${category} 가게 소셜미디어 홍보 문구를 작성해주세요.
-고객의 클릭을 유도하는 감성적이고 매력적인 문구, 이모지 포함, 2~3줄 이내.
-문구만 출력하세요.`;
-  return callGemini(prompt);
-}
+
 
     // 히스토리 UI 갱신은 삭제 (이제 async saveHistory 사용)
 
@@ -346,7 +326,7 @@ function render() {
         <div>
           <div class="section-tag" style="margin-bottom:8px">AI 자동 생성</div>
           <div class="promo-title">🌤️ 오늘의 홍보 문구</div>
-          <div class="promo-meta">${today} · ${selectedCategory} 맞춤 문구</div>
+          <div class="promo-meta">${today} · AI 업종 맞춤 문구</div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn-sm btn-orange" id="promo-gen-btn">✨ AI 문구 생성</button>
@@ -435,8 +415,6 @@ function renderHistory() {
       <button class="btn-sm btn-outline" style="cursor:pointer" onclick="navigator.clipboard.writeText(${JSON.stringify(h.reply)}).then(()=>showToast())">복사</button>
     </div>
   </div>`).join('');
-  
-  renderKeywordBubbles();
 }
 
 // 샘플 리뷰 데이터 (동기화 전 모의 데이터)

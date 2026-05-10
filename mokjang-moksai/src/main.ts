@@ -46,12 +46,20 @@ interface HistoryItem {
   time: string;
 }
 
+let deferredPrompt: any = null;
 let selectedPlatform: Platform = '배달의민족';
 let selectedCategory: Category = '한식';
 let selectedStar: Star = 5;
 let selectedKeywords: Set<string> = new Set();
 let isLoading = false;
 let history: HistoryItem[] = [];
+
+// PWA 설치 프로프트 리스너
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 설치 유도 배너나 버튼을 표시할 수 있습니다.
+});
 
 /* ── DATABASE LAYER (IndexedDB) ── */
 const DB_NAME = 'MokjangDB';
@@ -221,7 +229,10 @@ function render() {
         <div class="nav-logo">먹장먹살<span>AI 리뷰 비서</span></div>
         <div class="nav-company">by GoodKorea · 굿코리아</div>
       </div>
-      <div class="nav-badge"><span class="dot"></span>Beta 무료 서비스 중</div>
+      <div style="display:flex; gap:10px; align-items:center">
+        <button class="btn-sm btn-orange" id="install-btn" style="display:none">📲 앱으로 설치</button>
+        <div class="nav-badge"><span class="dot"></span>Beta</div>
+      </div>
     </div>
   </nav>
 
@@ -234,10 +245,10 @@ function render() {
       <button class="btn-cta btn-cta-secondary" onclick="document.getElementById('alarm').scrollIntoView({behavior:'smooth'})">📋 기능 더 보기</button>
     </div>
     <div class="hero-stats">
-      <div class="hero-stat"><span class="num">1초</span><span class="label">답변 생성 시간</span></div>
-      <div class="hero-stat"><span class="num">9가지</span><span class="label">업종 특화 톤앤매너</span></div>
-      <div class="hero-stat"><span class="num">5★</span><span class="label">별점별 맞춤 전략</span></div>
-      <div class="hero-stat"><span class="num">무료</span><span class="label">베타 기간 완전 무료</span></div>
+      <div class="hero-stat"><span class="num">1초</span><span class="label">답변 시간</span></div>
+      <div class="hero-stat"><span class="num">9종</span><span class="label">업종 특화</span></div>
+      <div class="hero-stat"><span class="num">5★</span><span class="label">별점 전략</span></div>
+      <div class="hero-stat"><span class="num">무료</span><span class="label">베타 서비스</span></div>
     </div>
   </section>
 
@@ -363,9 +374,33 @@ function render() {
   </section>
 
   <footer>
-    <p>© 2025 <span>먹장먹살</span> — AI 리뷰 비서. Made with ❤️ for 사장님들</p>
+    <p>© 2026 <span>먹장먹살</span> — AI 리뷰 비서. Made with ❤️ by GoodKorea</p>
     <div class="footer-company">GOODKOREA · 굿코리아 | MVP v1.0</div>
   </footer>
+
+  <!-- 플로팅 공유 버튼 -->
+  <button class="share-fab" id="share-fab" aria-label="공유하기">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+  </button>
+
+  <!-- 공유 모달 -->
+  <div class="modal" id="share-modal">
+    <div class="modal-content">
+      <h3>📢 앱 공유하기</h3>
+      <p>주변 사장님들께 '먹장먹살'을 추천해주세요!</p>
+      <div class="share-options">
+        <button class="share-option-btn" id="kakao-btn">
+          <span class="share-icon" style="background:#FEE500">💬</span>
+          <span>카카오톡</span>
+        </button>
+        <button class="share-option-btn" id="copy-url-btn">
+          <span class="share-icon" style="background:#eee">🔗</span>
+          <span>링크 복사</span>
+        </button>
+      </div>
+      <button class="btn-sm btn-outline" id="close-share" style="width:100%; margin-top:20px">닫기</button>
+    </div>
+  </div>
 
   <div class="toast" id="toast">✅ 클립보드에 복사되었습니다!</div>
   `;
@@ -400,6 +435,43 @@ function renderHistory() {
 }
 
 function bindEvents() {
+  // 설치 버튼
+  document.getElementById('install-btn')?.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      alert('이미 설치되어 있거나 현재 브라우저에서 지원하지 않습니다.\n브라우저 설정의 "홈 화면에 추가"를 이용해주세요!');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      deferredPrompt = null;
+      (document.getElementById('install-btn') as HTMLElement).style.display = 'none';
+    }
+  });
+
+  // 공유 버튼 (모달 열기)
+  document.getElementById('share-fab')?.addEventListener('click', () => {
+    document.getElementById('share-modal')!.style.display = 'flex';
+  });
+
+  // 링크 복사
+  document.getElementById('copy-url-btn')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(window.location.href);
+    showToast('✅ 주소가 복사되었습니다!');
+    document.getElementById('share-modal')!.style.display = 'none';
+  });
+
+  // 카카오톡 공유 (Placeholder)
+  document.getElementById('kakao-btn')?.addEventListener('click', () => {
+    alert('카카오톡 공유 기능을 준비 중입니다.\n(카카오 개발자 키 설정이 필요합니다)');
+    document.getElementById('share-modal')!.style.display = 'none';
+  });
+
+  // 모달 닫기
+  document.getElementById('close-share')?.addEventListener('click', () => {
+    document.getElementById('share-modal')!.style.display = 'none';
+  });
+
   // 플랫폼 탭
   document.getElementById('platform-tabs')!.addEventListener('click', e => {
     const btn = (e.target as HTMLElement).closest('.platform-btn') as HTMLButtonElement;

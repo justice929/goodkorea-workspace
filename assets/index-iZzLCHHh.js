@@ -91,10 +91,9 @@
               <span class="status-dot" style="width:8px; height:8px; background:#444; border-radius:50%"></span>
             </div>
             <div class="input-group" style="margin-bottom:12px">
-              <input type="text" placeholder="${e} 아이디" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px">
-              <input type="password" placeholder="비밀번호" class="review-input" style="padding:12px; font-size:13px">
+              <input type="text" id="id-${e}" placeholder="${e} 업체 ID (또는 주소)" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${e}`)||``}">
             </div>
-            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="this.innerHTML='✅ 연동됨'; this.style.borderColor='var(--green)'; this.style.color='var(--green)'">연동하기</button>
+            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${e}', document.getElementById('id-${e}').value); (window as any).showToast('✅ ${e} ID가 저장되었습니다.')">저장하기</button>
           </div>
         `).join(``)}
       </div>
@@ -200,7 +199,7 @@
       <span class="history-time">${g(e.time)}</span>
       <button class="btn-sm btn-outline" style="cursor:pointer" onclick="navigator.clipboard.writeText(${JSON.stringify(e.reply)}).then(()=>showToast())">복사</button>
     </div>
-  </div>`).join(``)}}var x=[{id:`r1`,platform:`배달의민족`,star:5,user:`고객1`,text:`너무 맛있어요! 양도 많고 배달도 빠르네요. 다음에 또 시켜먹을게요!`,time:`10분 전`},{id:`r2`,platform:`네이버`,star:4,user:`단골손님`,text:`항상 믿고 먹는 곳입니다. 그런데 오늘 고기가 조금 질겼어요 ㅠㅠ 그래도 맛있습니다.`,time:`1시간 전`},{id:`r3`,platform:`쿠팡이츠`,star:5,user:`리뷰어`,text:`사장님 서비스 최고예요! 요청사항도 잘 들어주시고 정말 감사합니다.`,time:`3시간 전`},{id:`r4`,platform:`요기요`,star:3,user:`혼밥러`,text:`맛은 있는데 배달이 너무 늦어서 다 식어서 왔어요...`,time:`5시간 전`},{id:`r5`,platform:`구글`,star:5,user:`Local Guide`,text:`Authentic Korean taste! Highly recommend the Kimchi stew.`,time:`어제`}];async function S(){try{let e=await(await fetch(`http://192.168.219.107:8000/scrape`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({platform:`naver`,target_id:`123456`})})).json();if(e.status===`success`&&e.data.length>0)return x=[...e.data,...x.filter(e=>e.platform!==`네이버`)],T(`✅ 네이버 실시간 리뷰 동기화 성공!`),C(),!0}catch(e){return console.warn(`Backend offline or error:`,e),window.location.protocol===`https:`&&T(`⚠️ 보안(HTTPS) 문제로 백엔드 연결이 차단되었을 수 있습니다. 주소창의 방패 아이콘을 눌러 "안전하지 않은 콘텐츠 허용"을 해주세요.`),!1}return!1}function C(){let e=document.getElementById(`review-inbox`);e&&(e.innerHTML=x.map(e=>`
+  </div>`).join(``)}}var x=[{id:`r1`,platform:`배달의민족`,star:5,user:`고객1`,text:`너무 맛있어요! 양도 많고 배달도 빠르네요. 다음에 또 시켜먹을게요!`,time:`10분 전`},{id:`r2`,platform:`네이버`,star:4,user:`단골손님`,text:`항상 믿고 먹는 곳입니다. 그런데 오늘 고기가 조금 질겼어요 ㅠㅠ 그래도 맛있습니다.`,time:`1시간 전`},{id:`r3`,platform:`쿠팡이츠`,star:5,user:`리뷰어`,text:`사장님 서비스 최고예요! 요청사항도 잘 들어주시고 정말 감사합니다.`,time:`3시간 전`},{id:`r4`,platform:`요기요`,star:3,user:`혼밥러`,text:`맛은 있는데 배달이 너무 늦어서 다 식어서 왔어요...`,time:`5시간 전`},{id:`r5`,platform:`구글`,star:5,user:`Local Guide`,text:`Authentic Korean taste! Highly recommend the Kimchi stew.`,time:`어제`}];async function S(){let e=localStorage.getItem(`id-네이버`);if(!e)return console.log(`Naver ID not set, skipping sync.`),!1;try{let t=await(await fetch(`http://192.168.219.107:8000/scrape`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({platform:`naver`,target_id:e})})).json();if(t.status===`success`&&t.data.length>0)return x=[...t.data,...x.filter(e=>e.platform!==`네이버`)],T(`✅ 네이버 실시간 리뷰 동기화 성공!`),C(),!0}catch(e){return console.warn(`Backend offline or error:`,e),window.location.protocol===`https:`&&T(`⚠️ 보안(HTTPS) 문제로 백엔드 연결이 차단되었을 수 있습니다. 주소창의 방패 아이콘을 눌러 "안전하지 않은 콘텐츠 허용"을 해주세요.`),!1}return!1}function C(){let e=document.getElementById(`review-inbox`);e&&(e.innerHTML=x.map(e=>`
     <div class="tool-card review-item" style="margin-bottom:24px; border-left: 6px solid ${n[e.platform]}; text-align: left; padding: 32px; border-radius: 28px; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(20px);">
       <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items: center;">
         <div style="display:flex; gap:16px; align-items:center">

@@ -299,10 +299,9 @@ function render() {
               <span class="status-dot" style="width:8px; height:8px; background:#444; border-radius:50%"></span>
             </div>
             <div class="input-group" style="margin-bottom:12px">
-              <input type="text" placeholder="${p} 아이디" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px">
-              <input type="password" placeholder="비밀번호" class="review-input" style="padding:12px; font-size:13px">
+              <input type="text" id="id-${p}" placeholder="${p} 업체 ID (또는 주소)" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${p}`) || ''}">
             </div>
-            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="this.innerHTML='✅ 연동됨'; this.style.borderColor='var(--green)'; this.style.color='var(--green)'">연동하기</button>
+            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${p}', document.getElementById('id-${p}').value); (window as any).showToast('✅ ${p} ID가 저장되었습니다.')">저장하기</button>
           </div>
         `).join('')}
       </div>
@@ -434,11 +433,17 @@ let liveReviews: any[] = [
 ];
 
 async function syncWithBackend() {
+  const naverId = localStorage.getItem('id-네이버');
+  if (!naverId) {
+    console.log('Naver ID not set, skipping sync.');
+    return false;
+  }
+  
   try {
     const response = await fetch('http://192.168.219.107:8000/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ platform: 'naver', target_id: '123456' }) // 예시 ID
+      body: JSON.stringify({ platform: 'naver', target_id: naverId })
     });
     const result = await response.json();
     if (result.status === 'success' && result.data.length > 0) {

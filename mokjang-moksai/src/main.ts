@@ -222,7 +222,7 @@ function render() {
   <nav class="nav">
     <div class="nav-inner">
       <div>
-        <div class="nav-logo">먹장먹살<span>AI 리뷰 비서</span></div>
+        <div class="nav-logo" style="cursor:pointer" onclick="location.reload()">먹장먹살<span>AI 리뷰 비서</span></div>
         <div class="nav-company">by GoodKorea · 굿코리아</div>
       </div>
       <div style="display:flex; gap:10px; align-items:center">
@@ -569,6 +569,23 @@ function bindEvents() {
   document.getElementById('copy-url-btn')?.addEventListener('click', () => {
     navigator.clipboard.writeText(window.location.href);
     showToast('✅ 주소가 복사되었습니다!');
+    document.getElementById('share-modal')!.style.display = 'none';
+  });
+
+  document.getElementById('kakao-btn')?.addEventListener('click', async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '먹장먹살 AI 리뷰 비서',
+          text: '외식업 사장님을 위한 최강의 AI 리뷰 답변 도구!',
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.warn('Sharing failed', err);
+      }
+    } else {
+      showToast('⚠️ 현재 브라우저에서는 공유 기능을 지원하지 않습니다.');
+    }
     document.getElementById('share-modal')!.style.display = 'none';
   });
 

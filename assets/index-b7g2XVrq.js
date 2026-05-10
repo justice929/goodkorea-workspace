@@ -92,8 +92,9 @@
             </div>
             <div class="input-group" style="margin-bottom:12px">
               <input type="text" id="id-${e}" placeholder="${e} 업체 ID (또는 주소)" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${e}`)||``}">
+              <input type="password" id="pw-${e}" placeholder="비밀번호 (선택사항)" class="review-input" style="padding:12px; font-size:13px" value="${localStorage.getItem(`pw-${e}`)||``}">
             </div>
-            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${e}', document.getElementById('id-${e}').value); (window as any).showToast('✅ ${e} ID가 저장되었습니다.')">저장하기</button>
+            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${e}', document.getElementById('id-${e}').value); localStorage.setItem('pw-${e}', document.getElementById('pw-${e}').value); (window as any).showToast('✅ ${e} 계정 정보가 저장되었습니다.')">저장하기</button>
           </div>
         `).join(``)}
       </div>

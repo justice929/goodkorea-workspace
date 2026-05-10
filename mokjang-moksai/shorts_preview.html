@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>먹장먹살 숏폼 시뮬레이터 (제이 제작)</title>
+<style>
+  body { margin: 0; background-color: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Pretendard', 'Noto Sans KR', sans-serif; color: white; }
+  .controls { margin-bottom: 20px; display: flex; gap: 10px; }
+  .control-btn { background: #333; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+  .control-btn.active { background: #FF4500; }
+  .phone-container { width: 375px; height: 812px; background: #000; border-radius: 40px; border: 10px solid #333; position: relative; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .video-layer { width: 100%; height: 100%; background: linear-gradient(to bottom, #1a1a1a, #0a0a0a); position: absolute; z-index: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .ui-layer { width: 100%; height: 100%; position: absolute; z-index: 2; pointer-events: none; }
+  .right-icons { position: absolute; right: 15px; bottom: 100px; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+  .icon { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; }
+  .bottom-text { position: absolute; bottom: 30px; left: 15px; width: 70%; pointer-events: auto;}
+  .title { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+  .desc { font-size: 14px; opacity: 0.8; }
+  .cta-button { margin-top: 10px; background: #FF4500; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; cursor: pointer;}
+  
+  /* Animation Hook */
+  .hook-text { font-size: 30px; font-weight: 900; line-height: 1.4; margin: 0 20px; color: #FFF; text-shadow: 2px 2px 0px #FF0055; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  .sub-text { font-size: 18px; font-weight: 700; margin-top: 20px; color: #FFD700; opacity: 0; animation: fadeIn 0.5s ease 1s forwards; padding: 0 20px; line-height: 1.4;}
+  
+  @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes fadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+  
+  /* Variations Background */
+  .bg-vlog { background: linear-gradient(to bottom, #2c3e50, #000000); }
+  .bg-screen { background: linear-gradient(to bottom, #16a085, #000000); }
+  .bg-warning { background: linear-gradient(to bottom, #c0392b, #000000); }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="control-btn active" onclick="setShorts(0)">브이로그(공감)</button>
+  <button class="control-btn" onclick="setShorts(1)">화면녹화(실무)</button>
+  <button class="control-btn" onclick="setShorts(2)">경고(매출방어)</button>
+</div>
+
+<div class="phone-container">
+  <div class="video-layer bg-vlog" id="videoLayer">
+    <div class="hook-text" id="hookText">오늘도 '공깃밥 양 적다'는<br>억지 별점 1점에 멘탈 나가셨나요?</div>
+    <div class="sub-text" id="subText">화는 나는데... 뭐라고 답글 달지<br>막막하시죠? 👇</div>
+  </div>
+  
+  <div class="ui-layer">
+    <div class="right-icons">
+      <div class="icon"></div>
+      <div class="icon"></div>
+      <div class="icon"></div>
+    </div>
+    <div class="bottom-text">
+      <div class="title">@MokjangMoksai</div>
+      <div class="desc" id="descText">진상 방어부터 단골 관리까지, AI가 알아서!</div>
+      <div class="cta-button" id="ctaText">지금 프로필 링크에서 확인하세요 👉</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const shortsData = [
+    {
+      hook: "오늘도 '공깃밥 양 적다'는<br>억지 별점 1점에 멘탈 나가셨나요?",
+      sub: "화는 나는데... 뭐라고 답글 달지<br>막막하시죠? 👇",
+      desc: "진상 방어부터 단골 관리까지, AI가 알아서!",
+      cta: "지금 프로필 링크에서 확인하세요 👉",
+      bgClass: "bg-vlog",
+      textShadow: "#FF0055"
+    },
+    {
+      hook: "배달앱에서 사장님들만 모르는<br>숨은 기능, 3초 만에 보여드립니다!",
+      sub: "리뷰 복사하고 버튼 하나 누르면<br>AI 답글 완성! 👇",
+      desc: "매일 밤 리뷰 달던 30분, 이제 3분으로!",
+      cta: "퇴근 시간 단축! 프로필 링크 클릭 👉",
+      bgClass: "bg-screen",
+      textShadow: "#0055FF"
+    },
+    {
+      hook: "리뷰 테러 한 번에<br>주문량 확 줄어드는 동네 장사,",
+      sub: "계속 당하고만 계실 겁니까?<br>감정 소모 없이 방어하세요 👇",
+      desc: "부당한 요구엔 AI로 깔끔하고 논리적으로!",
+      cta: "방어 시스템 구축! 프로필 링크 클릭 👉",
+      bgClass: "bg-warning",
+      textShadow: "#FFAA00"
+    }
+  ];
+
+  function setShorts(index) {
+    const data = shortsData[index];
+    
+    // Update Buttons
+    document.querySelectorAll('.control-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === index);
+    });
+
+    // Reset Animations
+    const hookEl = document.getElementById('hookText');
+    const subEl = document.getElementById('subText');
+    
+    hookEl.style.animation = 'none';
+    subEl.style.animation = 'none';
+    
+    // Force reflow
+    void hookEl.offsetWidth;
+    
+    // Update Content
+    hookEl.innerHTML = data.hook;
+    hookEl.style.textShadow = `2px 2px 0px ${data.textShadow}`;
+    subEl.innerHTML = data.sub;
+    document.getElementById('descText').innerText = data.desc;
+    document.getElementById('ctaText').innerText = data.cta;
+    
+    // Update Background
+    const videoLayer = document.getElementById('videoLayer');
+    videoLayer.className = `video-layer ${data.bgClass}`;
+    
+    // Re-trigger Animations
+    hookEl.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+    subEl.style.animation = 'fadeIn 0.5s ease 1s forwards';
+  }
+</script>
+</body>
+</html>

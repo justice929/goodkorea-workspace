@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "먹장먹살 AI 리뷰 비서",
+  "version": "1.0.0",
+  "description": "배달 플랫폼 사장님 광장에서 리뷰에 AI 답변을 즉시 달아줍니다.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://ceo.baemin.com/*",
+    "https://owner.yogiyo.co.kr/*",
+    "https://store.coupangeats.com/*",
+    "https://new.smartplace.naver.com/*",
+    "https://smartplace.naver.com/*",
+    "https://business.google.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "먹장먹살 AI"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://ceo.baemin.com/*",
+        "https://owner.yogiyo.co.kr/*",
+        "https://store.coupangeats.com/*",
+        "https://new.smartplace.naver.com/*",
+        "https://smartplace.naver.com/*",
+        "https://business.google.com/*"
+      ],
+      "css": ["content.css"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

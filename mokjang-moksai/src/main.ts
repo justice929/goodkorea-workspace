@@ -388,7 +388,6 @@ function render() {
   <div class="toast" id="toast">✅ 클립보드에 복사되었습니다!</div>
   `;
 
-  bindEvents();
   loadHistoryFromDB().then(() => renderHistory());
 }
 
@@ -521,8 +520,14 @@ function renderInbox() {
 
 function bindEvents() {
   document.getElementById('connect-btn')?.addEventListener('click', () => {
-    const section = document.getElementById('connect-section')!;
-    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    const section = document.getElementById('connect-section');
+    if (!section) return;
+    if (section.style.display === 'none' || section.style.display === '') {
+      section.style.display = 'block';
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      section.style.display = 'none';
+    }
   });
 
   document.getElementById('sync-btn')?.addEventListener('click', async () => {

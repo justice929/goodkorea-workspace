@@ -1,7 +1,7 @@
 import './style.css'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 type Category = '한식'|'중식'|'일식'|'카페'|'분식'|'양식'|'치킨'|'피자'|'고기';
 type Star = 1|2|3|4|5;
@@ -152,6 +152,9 @@ async function saveHistory(item: HistoryItem, updateMem = true) {
 }
 
 async function callGemini(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'undefined') {
+    throw new Error('API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+  }
   const res = await fetch(GEMINI_URL, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
@@ -160,7 +163,11 @@ async function callGemini(prompt: string): Promise<string> {
       generationConfig:{temperature:0.85,maxOutputTokens:512}
     })
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error('Gemini API Error:', errData);
+    throw new Error(`API 오류 (${res.status}): ${errData.error?.message || '알 수 없는 오류'}`);
+  }
   const d = await res.json();
   return d.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '생성 실패';
 }

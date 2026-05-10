@@ -1,9 +1,20 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scraper import ReviewScraper
 import asyncio
 
 app = FastAPI()
+
+# Enable CORS for frontend connection
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 scraper = ReviewScraper()
 
 class LoginRequest(BaseModel):

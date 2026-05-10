@@ -449,6 +449,9 @@ async function syncWithBackend() {
     }
   } catch (err) {
     console.warn('Backend offline or error:', err);
+    if (window.location.protocol === 'https:') {
+      showToast('⚠️ 보안(HTTPS) 문제로 백엔드 연결이 차단되었을 수 있습니다. 주소창의 방패 아이콘을 눌러 "안전하지 않은 콘텐츠 허용"을 해주세요.');
+    }
     return false;
   }
   return false;

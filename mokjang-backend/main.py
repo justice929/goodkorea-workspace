@@ -21,6 +21,14 @@ async def root():
 
 scraper = ReviewScraper()
 
+@app.on_event("startup")
+async def startup_event():
+    await scraper.start()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await scraper.stop()
+
 class LoginRequest(BaseModel):
     platform: str
     username: str

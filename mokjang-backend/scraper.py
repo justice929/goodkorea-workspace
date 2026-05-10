@@ -42,40 +42,50 @@ class ReviewScraper:
 
     async def scrape_naver_reviews(self, place_id):
         page = await self.context.new_page()
+        # Visitor reviews page
         url = f"https://pcmap.place.naver.com/restaurant/{place_id}/review/visitor"
         await page.goto(url)
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_load_state("domcontentloaded")
         
-        # Scroll and click 'More' button to load more reviews (e.g., up to 3 times)
-        for _ in range(3):
+        # Scroll and click 'More' button
+        for _ in range(2):
             try:
-                more_button = page.locator("a:has-text('더보기')")
+                more_button = page.get_by_role("button", name="더보기")
                 if await more_button.is_visible():
                     await more_button.click()
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(1)
                 else:
                     break
             except:
                 break
 
-        # Parse review items
-        review_elements = await page.locator("li.ow9Yy").all()
+        # More robust parsing
         results = []
-        for el in review_elements:
+        # li.ow9Yy is common, but let's try a broader search if needed
+        items = await page.locator("li:has(.z_38Y), li:has(.P_p9P)").all()
+        
+        for el in items:
             try:
-                user = await el.locator(".P_p9P").inner_text()
-                text = await el.locator(".z_38Y").inner_text()
-                star_el = el.locator(".X0_Yp")
-                star = 5 # Default if star rating is not visible (Naver uses 'Visit' count often now)
+                # Text content - multiple possible selectors
+                text_el = el.locator(".z_38Y, .rvS7X, .x9v1A")
+                text = await text_el.first.inner_text()
+                
+                # User name
+                user_el = el.locator(".P_p9P, .h069P, .G89S1")
+                user = await user_el.first.inner_text()
+                
+                # Star/Rating (often not present in newer Naver UI, usually 'Visit count' instead)
+                star = 5
                 
                 results.append({
                     "id": f"naver_{len(results)}",
                     "platform": "네이버",
-                    "user": user,
-                    "text": text,
+                    "user": user.strip(),
+                    "text": text.strip(),
                     "star": star,
                     "time": "최근"
                 })
+                if len(results) >= 10: break # Limit for MVP
             except:
                 continue
         

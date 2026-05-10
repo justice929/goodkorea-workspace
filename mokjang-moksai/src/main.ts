@@ -300,8 +300,9 @@ function render() {
             </div>
             <div class="input-group" style="margin-bottom:12px">
               <input type="text" id="id-${p}" placeholder="${p} 업체 ID (또는 주소)" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px" value="${localStorage.getItem(`id-${p}`) || ''}">
+              <input type="password" id="pw-${p}" placeholder="비밀번호 (선택사항)" class="review-input" style="padding:12px; font-size:13px" value="${localStorage.getItem(`pw-${p}`) || ''}">
             </div>
-            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${p}', document.getElementById('id-${p}').value); (window as any).showToast('✅ ${p} ID가 저장되었습니다.')">저장하기</button>
+            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="localStorage.setItem('id-${p}', document.getElementById('id-${p}').value); localStorage.setItem('pw-${p}', document.getElementById('pw-${p}').value); (window as any).showToast('✅ ${p} 계정 정보가 저장되었습니다.')">저장하기</button>
           </div>
         `).join('')}
       </div>

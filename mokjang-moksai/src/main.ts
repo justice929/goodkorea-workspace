@@ -428,7 +428,7 @@ let liveReviews: any[] = [
 
 async function syncWithBackend() {
   try {
-    const response = await fetch('http://localhost:8000/scrape', {
+    const response = await fetch('http://192.168.219.107:8000/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ platform: 'naver', target_id: '123456' }) // 예시 ID
@@ -541,7 +541,7 @@ function bindEvents() {
     if (synced) {
       showToast('✅ 실시간 리뷰 동기화 완료!');
     } else {
-      showToast('⚠️ 백엔드 연결 확인 필요 (localhost:8000)');
+      showToast('⚠️ 백엔드 연결 확인 필요 (192.168.219.107:8000)');
     }
     
     btn.textContent = originalText;

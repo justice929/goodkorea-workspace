@@ -7,6 +7,22 @@ type Category = '한식'|'중식'|'일식'|'카페'|'분식'|'양식'|'치킨'|'
 type Star = 1|2|3|4|5;
 type Platform = '배달의민족'|'요기요'|'쿠팡이츠'|'네이버'|'구글'|'기타';
 
+const PLATFORMS: Platform[] = ['배달의민족', '요기요', '쿠팡이츠', '네이버', '구글'];
+const PLATFORM_EMOJI: Record<string, string> = {
+  '배달의민족': '🛵',
+  '요기요': '🥘',
+  '쿠팡이츠': '🚀',
+  '네이버': '💚',
+  '구글': '🌐'
+};
+const PLATFORM_COLOR: Record<string, string> = {
+  '배달의민족': '#2AC1BC',
+  '요기요': '#FA0050',
+  '쿠팡이츠': '#00ADEF',
+  '네이버': '#03C75A',
+  '구글': '#4285F4'
+};
+
 const TONE: Record<Category,string> = {
   한식:'정겹고 따뜻한 한국 가정식의 정성',
   중식:'풍성하고 깊은 맛의 중화요리 전문점',
@@ -266,40 +282,50 @@ function render() {
     </div>
   </section>
   <section class="tool-section" id="tool">
-    <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:32px; flex-wrap:wrap; gap:20px">
+    <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:48px; flex-wrap:wrap; gap:20px">
       <div>
-        <div class="section-tag">전사 리뷰 통합 관리</div>
-        <h2 style="font-size:32px; font-weight:900">📥 리뷰 통합 인박스</h2>
-        <p style="color:var(--text-3)">배민, 네이버, 쿠팡이츠의 모든 리뷰를 한곳에서 관리하고 AI로 대응하세요.</p>
+        <div class="section-tag" style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: white; border: none; padding: 4px 16px;">LIVE DASHBOARD</div>
+        <h2 style="font-size:42px; font-weight:900; letter-spacing:-1px; margin-top:12px">📥 리뷰 통합 인박스</h2>
+        <p style="color:var(--text-3); font-size:16px">5대 플랫폼의 리뷰를 AI가 실시간으로 분석하고 대응합니다.</p>
       </div>
-      <div style="display:flex; gap:12px">
-        <button class="btn-sm btn-outline" id="sync-btn" style="background:rgba(255,255,255,0.05)">🔄 전체 플랫폼 동기화</button>
-        <button class="btn-sm btn-orange" id="connect-btn">🔌 플랫폼 계정 연동</button>
+      <div style="display:flex; gap:16px">
+        <button class="btn-sm btn-outline" id="sync-btn" style="padding: 12px 24px; border-radius: 14px; background:rgba(255,255,255,0.03)">🔄 전체 동기화</button>
+        <button class="btn-sm btn-orange" id="connect-btn" style="padding: 12px 24px; border-radius: 14px; box-shadow: 0 10px 20px rgba(255,107,53,0.3)">🔌 플랫폼 연동 관리</button>
       </div>
     </div>
 
-    <!-- 플랫폼 연동 모달/섹션 (심플하게) -->
-    <div id="connect-section" class="tool-card" style="display:none; margin-bottom:32px; border: 1px solid var(--accent)">
-      <h3>🔑 플랫폼 통합 로그인</h3>
-      <p style="font-size:14px; color:var(--text-3); margin-bottom:20px">리뷰를 자동으로 긁어오기 위해 배민/네이버 사장님 계정 연동이 필요합니다.</p>
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px">
-        <div class="input-group">
-          <label>배달의민족 ID</label>
-          <input type="text" placeholder="아이디 입력" class="review-input" style="margin-bottom:10px">
-          <input type="password" placeholder="비밀번호 입력" class="review-input">
-        </div>
-        <div class="input-group">
-          <label>네이버 스마트플레이스 ID</label>
-          <input type="text" placeholder="아이디 입력" class="review-input" style="margin-bottom:10px">
-          <input type="password" placeholder="비밀번호 입력" class="review-input">
-        </div>
+    <!-- 플랫폼 연동 센터 (심박한 디자인) -->
+    <div id="connect-section" class="tool-card" style="display:none; margin-bottom:48px; border: 1px solid rgba(255,107,53,0.3); background: rgba(30, 41, 59, 0.7); animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px">
+        <h3 style="font-size:24px; font-weight:800">🔌 플랫폼 커넥션 센터</h3>
+        <span style="font-size:12px; color:var(--text-3)">계정 정보는 브라우저에 안전하게 암호화되어 저장됩니다.</span>
       </div>
-      <button class="btn-cta btn-cta-primary" style="margin-top:20px; width:100%" onclick="document.getElementById('connect-section').style.display='none'; showToast('✅ 계정 연동이 완료되었습니다. 리뷰 동기화를 시작합니다.')">계정 연동 및 저장</button>
+      
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px">
+        ${PLATFORMS.map(p => `
+          <div class="platform-conn-card" style="background:rgba(15,23,42,0.5); padding:24px; border-radius:20px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+              <div style="display:flex; align-items:center; gap:10px">
+                <div style="width:40px; height:40px; background:${PLATFORM_COLOR[p]}; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px">${PLATFORM_EMOJI[p]}</div>
+                <span style="font-weight:700">${p}</span>
+              </div>
+              <span class="status-dot" style="width:8px; height:8px; background:#444; border-radius:50%"></span>
+            </div>
+            <div class="input-group" style="margin-bottom:12px">
+              <input type="text" placeholder="${p} 아이디" class="review-input" style="margin-bottom:8px; padding:12px; font-size:13px">
+              <input type="password" placeholder="비밀번호" class="review-input" style="padding:12px; font-size:13px">
+            </div>
+            <button class="btn-sm btn-outline" style="width:100%; border-radius:10px; font-size:12px" onclick="this.innerHTML='✅ 연동됨'; this.style.borderColor='var(--green)'; this.style.color='var(--green)'">연동하기</button>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:32px; padding-top:24px; border-top: 1px solid rgba(255,255,255,0.05); text-align:center">
+        <button class="btn-cta btn-cta-primary" style="width: auto; padding: 14px 60px;" onclick="document.getElementById('connect-section').style.display='none'; showToast('🚀 모든 플랫폼 연동 설정이 저장되었습니다.')">설정 완료 및 대시보드로 돌아가기</button>
+      </div>
     </div>
 
     <div class="review-inbox" id="review-inbox">
-      <!-- 긁어온 리뷰 리스트가 여기에 렌더링됨 -->
-      <div class="history-empty">리뷰 데이터를 동기화 중입니다... 🔄</div>
+      <!-- 긁어온 리뷰 리스트 -->
     </div>
   </section>
 
@@ -417,7 +443,9 @@ function renderHistory() {
 const SAMPLE_REVIEWS = [
   { id: 'r1', platform: '배달의민족', star: 5, user: '고객1', text: '너무 맛있어요! 양도 많고 배달도 빠르네요. 다음에 또 시켜먹을게요!', time: '10분 전' },
   { id: 'r2', platform: '네이버', star: 4, user: '단골손님', text: '항상 믿고 먹는 곳입니다. 그런데 오늘 고기가 조금 질겼어요 ㅠㅠ 그래도 맛있습니다.', time: '1시간 전' },
-  { id: 'r3', platform: '쿠팡이츠', star: 5, user: '리뷰어', text: '사장님 서비스 최고예요! 요청사항도 잘 들어주시고 정말 감사합니다.', time: '3시간 전' }
+  { id: 'r3', platform: '쿠팡이츠', star: 5, user: '리뷰어', text: '사장님 서비스 최고예요! 요청사항도 잘 들어주시고 정말 감사합니다.', time: '3시간 전' },
+  { id: 'r4', platform: '요기요', star: 3, user: '혼밥러', text: '맛은 있는데 배달이 너무 늦어서 다 식어서 왔어요...', time: '5시간 전' },
+  { id: 'r5', platform: '구글', star: 5, user: 'Local Guide', text: 'Authentic Korean taste! Highly recommend the Kimchi stew.', time: '어제' }
 ];
 
 function renderInbox() {
@@ -425,24 +453,32 @@ function renderInbox() {
   if (!inbox) return;
 
   inbox.innerHTML = SAMPLE_REVIEWS.map(r => `
-    <div class="tool-card review-item" style="margin-bottom:20px; border-left: 4px solid ${r.platform==='배달의민족'?'#2AC1BC':r.platform==='네이버'?'#03C75A':'#00ADEF'}; text-align: left;">
-      <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items: center;">
-        <div style="display:flex; gap:12px; align-items:center">
-          <span class="history-badge" style="background:rgba(255,255,255,0.1); border:none; padding:4px 12px;">${r.platform}</span>
-          <span class="stars" style="color:var(--yellow)">⭐ ${r.star}점</span>
-          <span style="font-size:13px; color:var(--text-3)">${r.user} · ${r.time}</span>
+    <div class="tool-card review-item" style="margin-bottom:24px; border-left: 6px solid ${PLATFORM_COLOR[r.platform]}; text-align: left; padding: 32px; border-radius: 28px; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(20px);">
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items: center;">
+        <div style="display:flex; gap:16px; align-items:center">
+          <div style="width:48px; height:48px; background:${PLATFORM_COLOR[r.platform]}; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px">${PLATFORM_EMOJI[r.platform]}</div>
+          <div>
+            <div style="font-weight:800; font-size:16px">${r.platform}</div>
+            <div style="font-size:12px; color:var(--text-3)">${r.user} · ${r.time}</div>
+          </div>
         </div>
-        <button class="btn-sm btn-orange" onclick="handleAiAnalyze('${r.id}')" id="btn-ai-${r.id}">✨ AI 답글 생성</button>
+        <div style="display:flex; align-items:center; gap:20px">
+          <span class="stars" style="color:var(--yellow); font-size:18px">${STAR_EMOJI[r.star]}</span>
+          <button class="btn-sm btn-orange" onclick="handleAiAnalyze('${r.id}')" id="btn-ai-${r.id}" style="padding: 10px 20px; font-weight:800">✨ AI 자동 답글</button>
+        </div>
       </div>
-      <div class="review-text-content" style="background:rgba(15, 23, 42, 0.4); padding:20px; border-radius:16px; margin-bottom:16px; font-size:15px; line-height:1.7; border: 1px solid rgba(255,255,255,0.05)">
-        ${r.text}
+      <div class="review-text-content" style="background:rgba(0, 0, 0, 0.2); padding:24px; border-radius:20px; margin-bottom:20px; font-size:16px; line-height:1.8; color: var(--text-2); border: 1px solid rgba(255,255,255,0.03)">
+        "${r.text}"
       </div>
-      <div class="reply-area" id="reply-area-${r.id}" style="display:none; animation: fadeUp 0.3s ease-out;">
-        <label style="font-size:12px; color:var(--accent); font-weight:700; margin-bottom:10px; display:block">🤖 AI 추천 답글 (수정 가능)</label>
-        <textarea class="review-input" id="input-reply-${r.id}" rows="5" style="margin-bottom:16px; background: rgba(0,0,0,0.3)"></textarea>
+      <div class="reply-area" id="reply-area-${r.id}" style="display:none; animation: slideUp 0.4s ease-out;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
+          <div style="width:24px; height:2px; background:var(--accent)"></div>
+          <label style="font-size:13px; color:var(--accent); font-weight:800; text-transform:uppercase; letter-spacing:1px">🤖 AI Recommendation</label>
+        </div>
+        <textarea class="review-input" id="input-reply-${r.id}" rows="6" style="margin-bottom:20px; background: rgba(15, 23, 42, 0.8); border: 1.5px solid rgba(255,107,53,0.3); font-size:15px; border-radius:16px;"></textarea>
         <div style="display:flex; justify-content:flex-end; gap:12px">
-          <button class="btn-sm btn-outline" onclick="document.getElementById('reply-area-${r.id}').style.display='none'">취소</button>
-          <button class="btn-sm btn-orange" onclick="handleSendReply('${r.id}')">🚀 답글 전송하기</button>
+          <button class="btn-sm btn-outline" style="padding: 12px 28px; border-radius: 12px" onclick="document.getElementById('reply-area-${r.id}').style.display='none'">나중에 하기</button>
+          <button class="btn-sm btn-orange" style="padding: 12px 36px; border-radius: 12px; font-weight:800" onclick="handleSendReply('${r.id}')">🚀 플랫폼에 즉시 전송</button>
         </div>
       </div>
     </div>

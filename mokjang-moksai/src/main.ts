@@ -418,7 +418,8 @@ function renderHistory() {
 }
 
 // 샘플 리뷰 데이터 (동기화 전 모의 데이터)
-const SAMPLE_REVIEWS = [
+// 실시간 리뷰 데이터 상태
+let liveReviews: any[] = [
   { id: 'r1', platform: '배달의민족', star: 5, user: '고객1', text: '너무 맛있어요! 양도 많고 배달도 빠르네요. 다음에 또 시켜먹을게요!', time: '10분 전' },
   { id: 'r2', platform: '네이버', star: 4, user: '단골손님', text: '항상 믿고 먹는 곳입니다. 그런데 오늘 고기가 조금 질겼어요 ㅠㅠ 그래도 맛있습니다.', time: '1시간 전' },
   { id: 'r3', platform: '쿠팡이츠', star: 5, user: '리뷰어', text: '사장님 서비스 최고예요! 요청사항도 잘 들어주시고 정말 감사합니다.', time: '3시간 전' },
@@ -426,11 +427,32 @@ const SAMPLE_REVIEWS = [
   { id: 'r5', platform: '구글', star: 5, user: 'Local Guide', text: 'Authentic Korean taste! Highly recommend the Kimchi stew.', time: '어제' }
 ];
 
+async function syncWithBackend() {
+  try {
+    const response = await fetch('http://localhost:8000/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform: 'naver', target_id: '123456' }) // 예시 ID
+    });
+    const result = await response.json();
+    if (result.status === 'success' && result.data.length > 0) {
+      liveReviews = [...result.data, ...liveReviews.filter(r => r.platform !== '네이버')];
+      showToast('✅ 네이버 실시간 리뷰 동기화 성공!');
+      renderInbox();
+      return true;
+    }
+  } catch (err) {
+    console.warn('Backend offline or error:', err);
+    return false;
+  }
+  return false;
+}
+
 function renderInbox() {
   const inbox = document.getElementById('review-inbox');
   if (!inbox) return;
 
-  inbox.innerHTML = SAMPLE_REVIEWS.map(r => `
+  inbox.innerHTML = liveReviews.map(r => `
     <div class="tool-card review-item" style="margin-bottom:24px; border-left: 6px solid ${PLATFORM_COLOR[r.platform]}; text-align: left; padding: 32px; border-radius: 28px; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(20px);">
       <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items: center;">
         <div style="display:flex; gap:16px; align-items:center">
@@ -464,7 +486,7 @@ function renderInbox() {
 }
 
 (window as any).handleAiAnalyze = async (id: string) => {
-  const review = SAMPLE_REVIEWS.find(r => r.id === id);
+  const review = liveReviews.find(r => r.id === id);
   if (!review) return;
   const btn = document.getElementById(`btn-ai-${id}`) as HTMLButtonElement;
   const originalText = btn.innerHTML;
@@ -503,15 +525,21 @@ function bindEvents() {
     section.style.display = section.style.display === 'none' ? 'block' : 'none';
   });
 
-  document.getElementById('sync-btn')?.addEventListener('click', () => {
+  document.getElementById('sync-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('sync-btn')!;
-    btn.textContent = '⏳ 동기화 중...';
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ 실시간 동기화 중...';
     showToast('🔄 각 플랫폼에서 최신 리뷰를 긁어오는 중입니다...');
-    setTimeout(() => {
-      renderInbox();
-      btn.textContent = '🔄 전체 플랫폼 동기화';
-      showToast('✅ 총 3개의 새로운 리뷰가 동기화되었습니다!');
-    }, 2000);
+    
+    const synced = await syncWithBackend();
+    
+    if (synced) {
+      showToast('✅ 실시간 리뷰 동기화 완료!');
+    } else {
+      showToast('⚠️ 백엔드 연결 확인 필요 (localhost:8000)');
+    }
+    
+    btn.textContent = originalText;
   });
 
   // 설치 버튼
@@ -567,10 +595,18 @@ async function initApp() {
   showToast('🚀 실시간 리뷰 동기화 및 AI 분석을 시작합니다...');
   
   setTimeout(async () => {
+    // 백엔드 동기화 시도
+    const synced = await syncWithBackend();
+    
     // 모든 리뷰에 대해 자동으로 AI 답글 생성 실행
-    const analyzePromises = SAMPLE_REVIEWS.map(r => (window as any).handleAiAnalyze(r.id));
+    const analyzePromises = liveReviews.map(r => (window as any).handleAiAnalyze(r.id));
     await Promise.all(analyzePromises);
-    showToast('✨ 모든 리뷰에 대한 AI 분석이 완료되었습니다.');
+    
+    if (synced) {
+      showToast('✨ 실시간 데이터 분석이 완료되었습니다.');
+    } else {
+      showToast('💡 백엔드 연결 실패. 모의 데이터로 분석을 완료했습니다.');
+    }
   }, 800);
 }
 

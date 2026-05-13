@@ -274,7 +274,7 @@ const renderConnectView = () => `
         </div>
         <input type="text" class="review-input"
           id="connect-id-${p}"
-          placeholder="${p} 가게 ID 또는 URL"
+          placeholder="${p === '구글' ? '구글 지도 URL 또는 Place ID (ChIJ...)' : p === '네이버' ? '네이버 플레이스 URL 또는 가게 ID' : p + ' 가게 ID 또는 URL'}"
           value="${localStorage.getItem(`id-${p}`) || ''}"
           style="margin-bottom:12px;">
         <button class="btn-sm btn-outline" onclick="saveConnectId('${p}')">저장</button>

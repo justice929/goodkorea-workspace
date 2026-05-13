@@ -503,7 +503,135 @@ class ReviewScraper:
             await page.close()
 
     async def scrape_google_reviews(self, place_id):
-        return []
+        if not self.context:
+            print("[ERROR] Browser context not initialized.")
+            return []
+
+        if not place_id:
+            print("[WARNING] 구글 Place ID 또는 지도 URL이 없습니다.")
+            return []
+
+        page = await self.context.new_page()
+        try:
+            # URL 또는 Place ID 처리
+            if place_id.startswith("http"):
+                url = place_id
+            elif re.match(r'^ChIJ[A-Za-z0-9_-]+$', place_id):
+                url = f"https://www.google.com/maps/place/?q=place_id:{place_id}&hl=ko"
+            else:
+                # 검색어로 처리
+                from urllib.parse import quote
+                url = f"https://www.google.com/maps/search/{quote(place_id)}/?hl=ko"
+
+            await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(3)
+
+            # 검색 결과가 여러 개인 경우 첫 번째 항목 클릭
+            first_result = page.locator('a[href*="/maps/place/"]').first
+            if await first_result.count() > 0 and "place" not in page.url:
+                await first_result.click()
+                await asyncio.sleep(2)
+
+            # 리뷰 탭 클릭
+            review_tab = page.locator(
+                'button[aria-label*="리뷰"], button[data-tab-index="1"], '
+                'button:has-text("리뷰"), [role="tab"]:has-text("리뷰")'
+            ).first
+            if await review_tab.count() > 0 and await review_tab.is_visible():
+                await review_tab.click()
+                await asyncio.sleep(2)
+
+            # 최신순 정렬
+            try:
+                sort_btn = page.locator('button[aria-label*="정렬"], button[data-value*="sort"]').first
+                if await sort_btn.is_visible():
+                    await sort_btn.click()
+                    await asyncio.sleep(1)
+                    newest = page.locator('[data-index="1"], [aria-label*="최신"], span:has-text("최신순")').first
+                    if await newest.is_visible():
+                        await newest.click()
+                        await asyncio.sleep(2)
+            except:
+                pass
+
+            # 리뷰 스크롤 (더 많이 로드)
+            review_panel = page.locator('[aria-label*="리뷰에 대한"] [role="feed"], .m6QErb').first
+            for _ in range(4):
+                try:
+                    if await review_panel.count() > 0:
+                        await review_panel.evaluate("el => el.scrollTop += 1500")
+                    else:
+                        await page.evaluate("window.scrollBy(0, 1500)")
+                    await asyncio.sleep(1.5)
+                except:
+                    break
+
+            # "더보기" 텍스트 펼치기
+            for expand_btn in await page.locator('button[aria-label*="더 보기"], button.w8nwRe').all():
+                try:
+                    await expand_btn.click()
+                    await asyncio.sleep(0.3)
+                except:
+                    pass
+
+            # 리뷰 추출
+            results = []
+            # Google Maps 리뷰 컨테이너 셀렉터
+            items = await page.locator('[data-review-id], .jftiEf, [class*="gws-localreviews"]').all()
+
+            if not items:
+                # 범용 폴백
+                items = await page.locator('div[aria-label][class*="review"], div:has(> [aria-label*="별점"])').all()
+
+            print(f"[INFO] 구글 리뷰 항목 {len(items)}개 발견")
+
+            for el in items:
+                try:
+                    # 별점: aria-label="별점 N점/5점" 패턴
+                    star_el = el.locator('[aria-label*="별점"], [aria-label*="star"], [aria-label*="Stars"]').first
+                    star_raw = await star_el.get_attribute("aria-label") if await star_el.count() > 0 else "5"
+                    star_match = re.search(r'(\d+)', star_raw or "5")
+                    star = min(5, max(1, int(star_match.group()))) if star_match else 5
+
+                    # 작성자
+                    user_el = el.locator('[class*="d4r55"], [class*="author"], button[aria-label]').first
+                    user = await user_el.inner_text() if await user_el.count() > 0 else "익명"
+                    # 버튼의 aria-label에서 이름 추출
+                    if not user.strip():
+                        user = await user_el.get_attribute("aria-label") or "익명"
+
+                    # 리뷰 텍스트
+                    text_el = el.locator('[class*="wiI7pd"], [class*="review-full-text"], span[jscontroller]').first
+                    if await text_el.count() == 0:
+                        text_el = el.locator('span, p').nth(1)
+                    text = await text_el.inner_text() if await text_el.count() > 0 else ""
+
+                    # 사장님 답글 여부
+                    reply_el = el.locator('[class*="CDe7pd"], [aria-label*="답변"], [class*="owner"]')
+                    has_reply = await reply_el.count() > 0
+
+                    if text.strip() or star < 5:
+                        results.append({
+                            "id": f"google_{len(results)}_{abs(hash(text + user))}",
+                            "platform": "구글",
+                            "user": user.strip() or "익명",
+                            "text": text.strip() or "(텍스트 없는 별점 리뷰)",
+                            "star": star,
+                            "time": "최근",
+                            "replied": has_reply
+                        })
+                except Exception as e:
+                    print(f"[DEBUG] 구글 파싱 오류: {e}")
+                    continue
+
+            print(f"[INFO] 구글 리뷰 {len(results)}개 수집")
+            return results[:25]
+
+        except Exception as e:
+            print(f"[ERROR] 구글 스크래핑 실패: {e}")
+            return []
+        finally:
+            await page.close()
 
     async def post_reply(self, platform, review_id, reply_text):
         """플랫폼별 답글 등록 통합 메서드"""

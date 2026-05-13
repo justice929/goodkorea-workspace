@@ -109,7 +109,7 @@
       `).join(``)}
     </div>
   </section>
-  `},v=[`배달의민족`],y=()=>`
+  `},v=[`배달의민족`,`쿠팡이츠`],y=()=>`
   <section class="tool-section" style="max-width: 700px;">
     <div class="section-tag">연동 관리</div>
     <h2 style="font-size:28px; margin-bottom:8px;">🔌 플랫폼 연동 설정</h2>

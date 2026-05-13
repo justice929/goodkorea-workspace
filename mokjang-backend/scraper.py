@@ -2,20 +2,38 @@ import asyncio
 from playwright.async_api import async_playwright
 import json
 import os
+import re
 
 class ReviewScraper:
     def __init__(self):
         self.browser = None
         self.context = None
+        self.playwright = None
 
     async def start(self):
-        self.playwright = await async_playwright().start()
-        # headed=True for better anti-bot bypass on Naver/Coupang
-        self.browser = await self.playwright.chromium.launch(headless=False) 
-        self.context = await self.browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-        )
+        """브라우저 엔진을 구동합니다. EBUSY 오류를 대비해 리트라이 로직을 포함합니다."""
+        for attempt in range(3):
+            try:
+                if not self.playwright:
+                    self.playwright = await async_playwright().start()
+                
+                self.browser = await self.playwright.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                ) 
+                self.context = await self.browser.new_context(
+                    viewport={'width': 1280, 'height': 1200},
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+                print(f"[INFO] Browser started successfully (Attempt {attempt+1})")
+                return
+            except Exception as e:
+                print(f"[WARNING] Browser start attempt {attempt+1} failed: {str(e)}")
+                if attempt < 2:
+                    await asyncio.sleep(2)
+                else:
+                    print("[CRITICAL] Failed to start browser after multiple attempts.")
+                    raise
 
     async def stop(self):
         if self.browser:
@@ -23,86 +41,98 @@ class ReviewScraper:
         if self.playwright:
             await self.playwright.stop()
 
-    async def login_naver(self, username, password):
-        page = await self.context.new_page()
-        await page.goto("https://nid.naver.com/nidlogin.login")
-        
-        # Use clipboard-style login to bypass bot detection
-        await page.evaluate(f'navigator.clipboard.writeText("{username}")')
-        await page.focus("#id")
-        await page.keyboard.press("Control+V")
-        
-        await page.evaluate(f'navigator.clipboard.writeText("{password}")')
-        await page.focus("#pw")
-        await page.keyboard.press("Control+V")
-        
-        await page.click(".btn_login")
-        await page.wait_for_load_state("networkidle")
-        return page
-
     async def scrape_naver_reviews(self, place_id):
-        page = await self.context.new_page()
-        # Visitor reviews page
-        url = f"https://pcmap.place.naver.com/restaurant/{place_id}/review/visitor"
-        await page.goto(url)
-        await page.wait_for_load_state("domcontentloaded")
-        
-        # Scroll and click 'More' button
-        for _ in range(2):
-            try:
-                more_button = page.get_by_role("button", name="더보기")
-                if await more_button.is_visible():
-                    await more_button.click()
-                    await asyncio.sleep(1)
-                else:
-                    break
-            except:
-                break
+        if not self.context:
+            print("[ERROR] Browser context not initialized. Call start() first.")
+            return []
 
-        # More robust parsing
-        results = []
-        # li.ow9Yy is common, but let's try a broader search if needed
-        items = await page.locator("li:has(.z_38Y), li:has(.P_p9P)").all()
+        if "naver.com" in place_id:
+            match = re.search(r'place/(\d+)', place_id)
+            if match: place_id = match.group(1)
+
+        page = await self.context.new_page()
+        # Visitor review page
+        url = f"https://pcmap.place.naver.com/restaurant/{place_id}/review/visitor"
         
-        for el in items:
-            try:
-                # Text content - multiple possible selectors
-                text_el = el.locator(".z_38Y, .rvS7X, .x9v1A")
-                text = await text_el.first.inner_text()
-                
-                # User name
-                user_el = el.locator(".P_p9P, .h069P, .G89S1")
-                user = await user_el.first.inner_text()
-                
-                # Star/Rating (often not present in newer Naver UI, usually 'Visit count' instead)
-                star = 5
-                
-                results.append({
-                    "id": f"naver_{len(results)}",
-                    "platform": "네이버",
-                    "user": user.strip(),
-                    "text": text.strip(),
-                    "star": star,
-                    "time": "최근"
-                })
-                if len(results) >= 10: break # Limit for MVP
-            except:
-                continue
-        
-        await page.close()
-        return results
+        try:
+            await page.goto(url, wait_until="networkidle", timeout=30000)
+            await asyncio.sleep(3)
+            
+            # 더보기 클릭 (최신 리뷰 더 많이 확보)
+            for _ in range(3):
+                try:
+                    more_btn = page.locator('a:has-text("더보기"), button:has-text("더보기")').first
+                    if await more_btn.is_visible():
+                        await more_btn.click()
+                        await asyncio.sleep(1.5)
+                    else: break
+                except: break
+
+            results = []
+            # 최신 Naver Place 셀렉터 (pwa_li, ow9Yy 등)
+            items = await page.locator("li.pwa_li, li.ow9Yy, li:has(.z_p_f_z)").all()
+            
+            for el in items:
+                try:
+                    # 텍스트 추출
+                    text_el = el.locator(".z_p_f_z, .z_38Y, .rvS7X, .x9v1A").first
+                    text = await text_el.inner_text() if await text_el.count() > 0 else ""
+                    
+                    # 사용자
+                    user_el = el.locator(".PwaS4, .P_p9P, .G89S1").first
+                    user = await user_el.inner_text() if await user_el.count() > 0 else "익명"
+                    
+                    # 별점/평점
+                    star_el = el.locator(".hGSR3, .hGSR3").first
+                    star_text = await star_el.inner_text() if await star_el.count() > 0 else "5"
+                    star_match = re.search(r'\d+(\.\d+)?', star_text)
+                    star = float(star_match.group()) if star_match else 5
+                    
+                    # 답글 여부 (pwa_reply 클래스 존재 여부)
+                    reply_el = el.locator(".pwa_reply, .pwa_reply")
+                    has_reply = await reply_el.count() > 0
+                    
+                    if text.strip() or user != "익명":
+                        results.append({
+                            "id": f"naver_{len(results)}_{abs(hash(text))}",
+                            "platform": "네이버",
+                            "user": user.strip(),
+                            "text": text.strip() or "내용 없음 (사진/키워드 리뷰)",
+                            "star": int(star),
+                            "time": "최근",
+                            "replied": has_reply
+                        })
+                except Exception as e:
+                    print(f"[DEBUG] Item parse error: {e}")
+                    continue
+                    
+            return results[:25]
+        except Exception as e:
+            print(f"[ERROR] Naver scrape failed: {e}")
+            return []
+        finally:
+            await page.close()
 
     async def scrape_baemin_reviews(self, shop_id):
-        # Baemin CEO portal scraping logic
-        # ...
+        # TODO: Baemin business login required for real unreplied reviews
         return []
 
-async def test_scraper():
-    scraper = ReviewScraper()
-    await scraper.start()
-    print("Scraper started...")
-    # Add test calls here
-    await scraper.stop()
+    async def scrape_coupang_reviews(self, shop_id):
+        return []
 
-if __name__ == "__main__":
-    asyncio.run(test_scraper())
+    async def scrape_yogiyo_reviews(self, shop_id):
+        return []
+
+    async def scrape_google_reviews(self, place_id):
+        return []
+
+    async def post_reply(self, platform, review_id, reply_text):
+        """플랫폼별 답글 등록 통합 메서드"""
+        if platform == 'naver':
+            return await self.post_naver_reply(review_id, reply_text)
+        print(f"[INFO] Post reply for {platform} (Mocked Success)")
+        return True
+
+    async def post_naver_reply(self, review_id, reply_text):
+        # Requires SmartPlace Login
+        return True

@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/goodkorea-workspace/',
+  base: '/',
   build: {
     outDir: 'dist',
   },
   server: {
-    port: 5173
+    port: 5173,
+    host: true
   }
 })

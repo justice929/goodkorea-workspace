@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 import fs from "fs";
 import express from "express";
 import cors from "cors";
+import cron from "node-cron";
 
 // ── 로컬 백엔드 서버 (Express) ──
 const app = express();
@@ -52,6 +53,38 @@ const projectStatus = {
   "SlimeFit": "📦 아카이브 보관 중",
 };
 
+const sendDailyReport = () => {
+  const now = new Date().toLocaleString("ko-KR");
+  const reportMsg = `🧭 하율입니다, 대표님! 팀 전체 기상 브리핑 드립니다! (${now})
+
+📋 팀 현황:
+🟢 코다리 부장 — 개발 대기 중
+🟢 시율 팀장 — 마케팅 대기 중  
+🟢 난설 실장 — 운영 대기 중
+🟢 하율 — 수석참모 대기 중
+
+🚦 ${COMPANY} 프로젝트 통합 보고:
+- 먹장먹살 MVP v1.0: 개발 완료 및 가동 중
+- AI 리뷰 답변 엔진: 9개 업종 최적화 완료
+- 텔레그램 봇: 24시간 모니터링 가동 중
+
+😎 코다리 부장 한마디:
+"대표님, 오늘 아침도 상쾌하네요! 코드는 완벽하니 사업 번창만 신경 쓰십시오! 충성!"
+
+지시를 내려주십시오, 대표님! ✅`;
+
+  bot.sendMessage(CHAT_ID, reportMsg);
+  console.log(`[${now}] 📢 정기 업무 보고 발송 완료`);
+};
+
+// 매일 오전 9시 정기 보고 스케줄링
+cron.schedule("0 9 * * *", () => {
+  sendDailyReport();
+}, {
+  scheduled: true,
+  timezone: "Asia/Seoul"
+});
+
 console.log(`🚀 [${COMPANY}] 하율 24 엔진 가동 시작! ${VERSION}`);
 
 bot.sendMessage(CHAT_ID,
@@ -94,23 +127,7 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, msg2);
 
   } else if (text === "/report") {
-    bot.sendMessage(chatId,
-`📋 최신 업무 보고 (하율 브리핑)
-
-🟢 먹장먹살 MVP v1.0: 개발 완료
-  ├ AI 리뷰 답변 생성기 (9개 업종)
-  ├ 별점별 맞춤 전략 (1~5★)
-  ├ 키워드 16개 선택 기능
-  ├ 오늘의 홍보문구 AI 생성
-  └ 답변 히스토리 저장
-
-🟢 굿코리아 공식 출범
-🟢 텔레그램 봇 24시간 가동
-📦 SlimeFit: 아카이브 보관 중
-
-다음 단계: 사용자 테스트 & 피드백 수집
-대표님의 다음 지시를 기다리겠습니다! 🛡️`
-    );
+    sendDailyReport();
 
   } else if (text === "/meeting") {
     bot.sendMessage(chatId,

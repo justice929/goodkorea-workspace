@@ -1,7 +1,7 @@
 import './style.css'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // [Config]
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY;
@@ -430,9 +430,17 @@ const renderConnectView = () => `
       })
     });
     const data = await res.json();
-    reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '답변 생성에 실패했습니다.';
-  } catch {
-    reply = '네트워크 오류로 AI 답변 생성에 실패했습니다. 직접 입력해주세요.';
+    if (!res.ok) {
+      const errMsg = data.error?.message || `HTTP ${res.status}`;
+      showToast(`Gemini 오류: ${errMsg}`, true);
+      reply = `[오류] ${errMsg}\n\n직접 답변을 입력해주세요.`;
+    } else {
+      reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '답변 생성에 실패했습니다.';
+    }
+  } catch (e: any) {
+    const msg = e?.message || '알 수 없는 오류';
+    showToast(`네트워크 오류: ${msg}`, true);
+    reply = '네트워크 오류로 생성에 실패했습니다. 직접 입력해주세요.';
   }
 
   document.getElementById(`reply-result-${id}`)!.style.display = 'block';

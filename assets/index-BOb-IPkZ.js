@@ -111,6 +111,7 @@
   </section>
   `},v=[`배달의민족`,`쿠팡이츠`,`요기요`],y=()=>`
   <section class="tool-section" style="max-width: 700px;">
+    <button class="btn-sm btn-outline" style="margin-bottom:24px;" onclick="navigateTo('main')">← 돌아가기</button>
     <div class="section-tag">연동 관리</div>
     <h2 style="font-size:28px; margin-bottom:8px;">🔌 플랫폼 연동 설정</h2>
     <p style="color:var(--text-3); margin-bottom:40px;">각 플랫폼 정보를 입력하면 리뷰를 자동으로 가져옵니다.</p>

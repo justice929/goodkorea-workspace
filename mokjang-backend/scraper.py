@@ -74,27 +74,35 @@ class ReviewScraper:
             
             for el in items:
                 try:
+                    # 실제 리뷰 ID 추출 시도
+                    review_id = (
+                        await el.get_attribute("data-review-id") or
+                        await el.get_attribute("data-comment-id") or
+                        await el.get_attribute("id") or ""
+                    )
                     # 텍스트 추출
                     text_el = el.locator(".z_p_f_z, .z_38Y, .rvS7X, .x9v1A").first
                     text = await text_el.inner_text() if await text_el.count() > 0 else ""
-                    
+
                     # 사용자
                     user_el = el.locator(".PwaS4, .P_p9P, .G89S1").first
                     user = await user_el.inner_text() if await user_el.count() > 0 else "익명"
-                    
+
                     # 별점/평점
-                    star_el = el.locator(".hGSR3, .hGSR3").first
+                    star_el = el.locator(".hGSR3").first
                     star_text = await star_el.inner_text() if await star_el.count() > 0 else "5"
                     star_match = re.search(r'\d+(\.\d+)?', star_text)
                     star = float(star_match.group()) if star_match else 5
-                    
-                    # 답글 여부 (pwa_reply 클래스 존재 여부)
-                    reply_el = el.locator(".pwa_reply, .pwa_reply")
+
+                    # 답글 여부
+                    reply_el = el.locator(".pwa_reply")
                     has_reply = await reply_el.count() > 0
-                    
+
                     if text.strip() or user != "익명":
+                        # 실제 ID가 있으면 사용, 없으면 해시 기반
+                        rid = review_id.strip() if review_id.strip() else f"naver_{len(results)}_{abs(hash(text))}"
                         results.append({
-                            "id": f"naver_{len(results)}_{abs(hash(text))}",
+                            "id": rid,
                             "platform": "네이버",
                             "user": user.strip(),
                             "text": text.strip() or "내용 없음 (사진/키워드 리뷰)",
@@ -633,13 +641,115 @@ class ReviewScraper:
         finally:
             await page.close()
 
-    async def post_reply(self, platform, review_id, reply_text):
+    async def post_reply(self, platform, review_id, reply_text, credentials=""):
         """플랫폼별 답글 등록 통합 메서드"""
         if platform == 'naver':
-            return await self.post_naver_reply(review_id, reply_text)
-        print(f"[INFO] Post reply for {platform} (Mocked Success)")
-        return True
+            return await self.post_naver_reply(review_id, reply_text, credentials)
+        print(f"[INFO] Post reply for {platform} — 미구현 플랫폼")
+        return False
 
-    async def post_naver_reply(self, review_id, reply_text):
-        # Requires SmartPlace Login
-        return True
+    async def post_naver_reply(self, review_id, reply_text, credentials=""):
+        if not self.context:
+            print("[ERROR] Browser context not initialized.")
+            return False
+
+        parts = credentials.split('|')
+        if len(parts) < 2 or not parts[0] or not parts[1]:
+            print("[ERROR] 네이버 SmartPlace 로그인 정보 없음. 연동관리에서 입력해주세요.")
+            return False
+
+        login_id, password = parts[0].strip(), parts[1].strip()
+        page = await self.context.new_page()
+
+        try:
+            # 1. 네이버 로그인
+            await page.goto(
+                "https://nid.naver.com/nidlogin.login?url=https://smartplace.naver.com/",
+                wait_until="domcontentloaded", timeout=30000
+            )
+            await asyncio.sleep(1)
+
+            await page.locator('#id').fill(login_id)
+            await page.locator('#pw').fill(password)
+            await page.locator('#log\.login').click()
+            await asyncio.sleep(3)
+
+            # 2단계 인증 대기 (최대 60초)
+            if "nid.naver.com" in page.url:
+                print("[INFO] 네이버 2단계 인증 대기 중 (최대 60초)...")
+                for _ in range(30):
+                    await asyncio.sleep(2)
+                    if "smartplace.naver.com" in page.url:
+                        break
+                if "nid.naver.com" in page.url:
+                    print("[ERROR] 네이버 로그인 실패 또는 2단계 인증 시간 초과")
+                    return False
+
+            print(f"[INFO] 네이버 로그인 성공: {page.url}")
+
+            # 2. SmartPlace 리뷰 관리 페이지 이동
+            # place_id 없이도 대시보드에서 리뷰 접근
+            review_page_urls = [
+                "https://smartplace.naver.com/home",
+                "https://smartplace.naver.com/",
+            ]
+            await page.goto(review_page_urls[0], wait_until="domcontentloaded", timeout=20000)
+            await asyncio.sleep(2)
+
+            # 리뷰 관리 메뉴 클릭
+            try:
+                review_menu = page.locator('a:has-text("리뷰"), a[href*="review"]').first
+                if await review_menu.is_visible():
+                    await review_menu.click()
+                    await asyncio.sleep(2)
+            except:
+                pass
+
+            # 3. 해당 리뷰 찾기 (review_id 기반)
+            # 리뷰 ID가 실제 Naver ID인 경우 직접 링크 시도
+            found = False
+            if not review_id.startswith("naver_"):
+                # 실제 리뷰 ID — 직접 요소 찾기 시도
+                target = page.locator(f'[data-review-id="{review_id}"], [data-comment-id="{review_id}"], #{review_id}').first
+                if await target.count() > 0:
+                    await target.scroll_into_view_if_needed()
+                    found = True
+
+            if not found:
+                # 미답변 리뷰 목록에서 첫 번째 항목에 답글 시도 (fallback)
+                print(f"[INFO] review_id({review_id})로 직접 매칭 실패 — 미답변 리뷰 목록 상단에서 시도합니다.")
+
+            # 4. 답글 버튼 클릭
+            reply_btn = page.locator(
+                'button:has-text("답글 달기"), button:has-text("답글쓰기"), '
+                'button:has-text("사장님 댓글"), a:has-text("답글")'
+            ).first
+            if await reply_btn.count() == 0 or not await reply_btn.is_visible():
+                print("[ERROR] 답글 버튼을 찾을 수 없습니다.")
+                return False
+            await reply_btn.click()
+            await asyncio.sleep(1.5)
+
+            # 5. 답글 입력
+            textarea = page.locator('textarea[placeholder*="답글"], textarea[placeholder*="댓글"], textarea').first
+            if await textarea.count() == 0:
+                print("[ERROR] 답글 입력창을 찾을 수 없습니다.")
+                return False
+            await textarea.fill(reply_text)
+            await asyncio.sleep(0.5)
+
+            # 6. 제출
+            submit_btn = page.locator(
+                'button:has-text("등록"), button:has-text("완료"), button[type="submit"]'
+            ).first
+            await submit_btn.click()
+            await asyncio.sleep(2)
+
+            print("[INFO] 네이버 답글 등록 완료")
+            return True
+
+        except Exception as e:
+            print(f"[ERROR] 네이버 답글 등록 실패: {e}")
+            return False
+        finally:
+            await page.close()

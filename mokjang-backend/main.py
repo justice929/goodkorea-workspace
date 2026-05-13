@@ -69,6 +69,7 @@ class ReplyRequest(BaseModel):
     place_id: str
     review_id: str
     reply_text: str
+    credentials: str = ""  # "loginId|password" — 로그인이 필요한 플랫폼용
 
     @field_validator("reply_text")
     @classmethod
@@ -100,7 +101,7 @@ async def scrape_reviews(req: ScrapeRequest):
 @app.post("/reply", dependencies=[Depends(verify_api_key)])
 async def post_reply(req: ReplyRequest):
     try:
-        success = await scraper.post_reply(req.platform, req.review_id, req.reply_text)
+        success = await scraper.post_reply(req.platform, req.review_id, req.reply_text, req.credentials)
         if success:
             return {"status": "success", "message": f"Reply posted to {req.platform}"}
         else:

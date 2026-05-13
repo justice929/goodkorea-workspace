@@ -266,6 +266,7 @@ const renderConnectView = () => `
           <button class="btn-sm btn-outline" onclick="saveConnectId('${p}')">저장</button>
         </div>`;
       }
+      const spSaved = p === '네이버' ? (localStorage.getItem('sp-네이버') || '').split('|') : [];
       return `
       <div class="tool-card" style="margin-bottom:20px; padding:28px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
@@ -278,6 +279,17 @@ const renderConnectView = () => `
           value="${localStorage.getItem(`id-${p}`) || ''}"
           style="margin-bottom:12px;">
         <button class="btn-sm btn-outline" onclick="saveConnectId('${p}')">저장</button>
+        ${p === '네이버' ? `
+        <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+          <div style="font-size:12px; font-weight:700; margin-bottom:8px;">답글 등록용 스마트플레이스 계정</div>
+          <label style="font-size:12px; color:var(--text-3); display:block; margin-bottom:4px;">네이버 아이디</label>
+          <input type="text" class="review-input" id="sp-naver-id"
+            placeholder="네이버 아이디" value="${spSaved[0] || ''}" style="margin-bottom:8px;">
+          <label style="font-size:12px; color:var(--text-3); display:block; margin-bottom:4px;">비밀번호</label>
+          <input type="password" class="review-input" id="sp-naver-pw"
+            placeholder="비밀번호" value="${spSaved[1] || ''}" style="margin-bottom:12px;">
+          <button class="btn-sm btn-outline" onclick="saveNaverSmartPlace()">스마트플레이스 계정 저장</button>
+        </div>` : ''}
       </div>`;
     }).join('')}
 
@@ -354,7 +366,8 @@ const renderConnectView = () => `
         platform: review.platform === '네이버' ? 'naver' : review.platform,
         place_id: localStorage.getItem(`id-${review.platform}`) || '',
         review_id: review.id,
-        reply_text: replyText
+        reply_text: replyText,
+        credentials: review.platform === '네이버' ? (localStorage.getItem('sp-네이버') || '') : ''
       })
     });
     const result = await res.json();
@@ -381,6 +394,15 @@ const renderConnectView = () => `
     localStorage.setItem(`id-${platform}`, input.value);
   }
   showToast(`${platform} 정보가 저장되었습니다.`);
+};
+
+(window as any).saveNaverSmartPlace = () => {
+  const idInput = document.getElementById('sp-naver-id') as HTMLInputElement;
+  const pwInput = document.getElementById('sp-naver-pw') as HTMLInputElement;
+  if (idInput && pwInput) {
+    localStorage.setItem('sp-네이버', `${idInput.value}|${pwInput.value}`);
+    showToast('스마트플레이스 계정이 저장되었습니다.');
+  }
 };
 
 (window as any).saveBackendUrl = () => {

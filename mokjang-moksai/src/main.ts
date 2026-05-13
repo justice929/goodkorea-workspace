@@ -55,17 +55,28 @@ const showToast = (msg: string, isError = false) => {
 };
 
 // [Auth Logic]
+const loginSuccess = (name: string) => {
+  currentUser = { name, type: 'owner' };
+  localStorage.setItem('isLoggedIn', 'true');
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  (window as any).navigateTo('main');
+  showToast(`반갑습니다, ${name}님!`);
+};
+
 (window as any).handleKakaoLogin = () => {
-  if (!(window as any).Kakao) return showToast('카카오 SDK 로드 중...', true);
-  (window as any).Kakao.Auth.login({
-    success: (authObj: any) => {
-      console.log('Kakao Login Success', authObj);
-      // 실제로는 백엔드에서 토큰 검증 후 사용자 정보를 가져와야 함
-      currentUser = { name: '테스트 사장님', type: 'owner' };
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      (window as any).navigateTo('main');
-      showToast('반갑습니다, 사장님! 카카오로 로그인되었습니다.');
+  const kakao = (window as any).Kakao;
+  if (!kakao || !kakao.isInitialized()) {
+    // Kakao 미설정 시 MVP 모드로 바로 입장
+    loginSuccess(localStorage.getItem('ownerName') || '사장님');
+    return;
+  }
+  kakao.Auth.login({
+    success: () => {
+      kakao.API.request({
+        url: '/v2/user/me',
+        success: (res: any) => loginSuccess(res.kakao_account?.profile?.nickname || '사장님'),
+        fail: () => loginSuccess('사장님'),
+      });
     },
     fail: (_err: any) => {
       showToast('카카오 로그인에 실패했습니다.', true);
@@ -76,11 +87,17 @@ const showToast = (msg: string, isError = false) => {
 (window as any).handleSignup = (e: Event) => {
   e.preventDefault();
   const bizNum = (document.getElementById('signup-biz-num') as HTMLInputElement).value;
-  if (!bizNum || bizNum.length < 10) {
+  const storeName = (document.getElementById('signup-store-name') as HTMLInputElement).value;
+  if (!bizNum || bizNum.replace(/-/g, '').length < 10) {
     return showToast('올바른 사업자 등록번호를 입력해주세요.', true);
   }
-  showToast('회원가입이 승인 대기 중입니다. (MVP 모드 자동 승인)');
-  (window as any).navigateTo('login');
+  if (!storeName.trim()) {
+    return showToast('매장명을 입력해주세요.', true);
+  }
+  localStorage.setItem('ownerName', storeName.trim() + ' 사장님');
+  // MVP: 등록 즉시 로그인 처리
+  loginSuccess(storeName.trim() + ' 사장님');
+  showToast('가게 등록이 완료되었습니다! 바로 시작합니다.');
 };
 
 (window as any).handleLogout = () => {
@@ -109,13 +126,16 @@ const renderLoginView = () => `
   <section class="hero" style="padding-top: 100px; animation: slideDown 0.6s ease-out;">
     <div class="section-tag">사장님 전용</div>
     <h1 style="font-size: 42px;">사장님의 리뷰 고민,<br><span class="highlight">먹장먹살이 해결합니다.</span></h1>
-    <p style="color: var(--text-3); margin-bottom: 40px;">외식업 사업자 인증을 통해 안전하게 관리하세요.</p>
-    
+    <p style="color: var(--text-3); margin-bottom: 12px;">처음 오셨나요? 먼저 가게를 등록해주세요.</p>
+
     <div style="max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 16px;">
-      <button class="generate-btn" style="background:#FEE500; color:#3C1E1E; border:none; width:100%;" onclick="handleKakaoLogin()">
-        <img src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_small.png" style="width:20px; vertical-align:middle; margin-right:8px"> 카카오로 1초 로그인
+      <button class="generate-btn" style="width:100%; font-size:18px; padding:20px;" onclick="navigateTo('signup')">
+        🏪 우리 가게 등록하고 시작하기
       </button>
-      <button class="btn-cta btn-cta-secondary" style="width:fit-content; padding: 12px 32px;" onclick="navigateTo('signup')">우리 가게 등록하기</button>
+      <p style="color:var(--text-3); font-size:13px; margin:0;">이미 등록하셨나요?</p>
+      <button class="generate-btn" style="background:#FEE500; color:#3C1E1E; border:none; width:100%;" onclick="handleKakaoLogin()">
+        <img src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_small.png" style="width:20px; vertical-align:middle; margin-right:8px"> 카카오로 로그인
+      </button>
     </div>
   </section>
 `;
@@ -123,35 +143,52 @@ const renderLoginView = () => `
 const renderSignupView = () => `
   <section class="tool-section" style="max-width: 500px; padding-top: 80px;">
     <div class="tool-card" style="padding: 40px;">
-      <h2 style="margin-bottom: 24px; text-align: center;">가게 등록하기</h2>
+      <h2 style="margin-bottom: 8px; text-align: center;">🏪 가게 등록하기</h2>
+      <p style="text-align:center; color:var(--text-3); font-size:13px; margin-bottom:28px;">등록 후 바로 리뷰 관리를 시작할 수 있습니다.</p>
       <form onsubmit="handleSignup(event)">
-        <label>사업자 등록번호</label>
-        <input type="text" id="signup-biz-num" class="review-input" placeholder="000-00-00000" style="margin-bottom: 20px;">
-        <label>매장명</label>
-        <input type="text" class="review-input" placeholder="매장 이름을 입력하세요" style="margin-bottom: 20px;">
-        <button type="submit" class="generate-btn">등록 신청하기</button>
+        <label>매장명 *</label>
+        <input type="text" id="signup-store-name" class="review-input" placeholder="예) 맛있는 삼겹살집" style="margin-bottom: 20px;">
+        <label>사업자 등록번호 *</label>
+        <input type="text" id="signup-biz-num" class="review-input" placeholder="000-00-00000" style="margin-bottom: 28px;">
+        <button type="submit" class="generate-btn">등록하고 바로 시작하기 →</button>
       </form>
-      <p style="text-align:center; font-size:12px; color:var(--text-3); margin-top:20px; cursor:pointer;" onclick="navigateTo('login')">이미 계정이 있으신가요? 로그인</p>
+      <p style="text-align:center; font-size:12px; color:var(--text-3); margin-top:20px; cursor:pointer;" onclick="navigateTo('login')">← 이전으로</p>
     </div>
   </section>
 `;
 
-const renderMainView = () => `
+const renderMainView = () => {
+  const hasAnyId = PLATFORMS.some(p => localStorage.getItem(`id-${p}`));
+  return `
   <section class="hero" style="padding-top: 60px;">
     <h1 style="font-size: 32px; margin-bottom: 12px;">반갑습니다, <span class="highlight">${currentUser?.name || '사장님'}!</span></h1>
-    <p style="color: var(--text-3); margin-bottom: 48px;">오늘도 5대 플랫폼의 리뷰를 스마트하게 관리하세요.</p>
-    
+    <p style="color: var(--text-3); margin-bottom: 32px;">관리할 플랫폼을 선택하세요.</p>
+
+    ${!hasAnyId ? `
+    <div style="max-width:900px; margin: 0 auto 40px; padding:24px 32px; background:rgba(255,200,0,0.07); border:1px solid rgba(255,200,0,0.3); border-radius:20px; display:flex; align-items:center; gap:16px;">
+      <span style="font-size:28px;">🔌</span>
+      <div>
+        <div style="font-weight:700; margin-bottom:4px;">먼저 가게 ID를 연동해주세요</div>
+        <div style="font-size:13px; color:var(--text-3);">각 플랫폼의 가게 ID를 등록해야 리뷰를 불러올 수 있습니다.</div>
+      </div>
+      <button class="btn-sm btn-outline" style="margin-left:auto; white-space:nowrap;" onclick="navigateTo('connect')">지금 연동하기 →</button>
+    </div>
+    ` : ''}
+
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:20px; max-width: 900px; margin: 0 auto;">
-      ${PLATFORMS.map(p => `
-        <div class="platform-conn-card" onclick="openPlatformReviews('${p}')" style="cursor:pointer; padding:32px 20px; border:1px solid var(--border); border-radius:32px; text-align:center; background:rgba(255,255,255,0.03); transition:all 0.3s">
+      ${PLATFORMS.map(p => {
+        const hasId = !!localStorage.getItem(`id-${p}`);
+        return `
+        <div onclick="openPlatformReviews('${p}')" style="cursor:pointer; padding:32px 20px; border:1px solid ${hasId ? PLATFORM_COLOR[p] + '55' : 'var(--border)'}; border-radius:32px; text-align:center; background:rgba(255,255,255,0.03); transition:all 0.3s">
           <div style="font-size:48px; margin-bottom:16px;">${PLATFORM_EMOJI[p]}</div>
           <div style="font-weight:900; font-size:16px;">${p}</div>
-          <div style="font-size:11px; color:var(--text-3); margin-top:8px">리뷰 확인</div>
-        </div>
-      `).join('')}
+          <div style="font-size:11px; color:${hasId ? PLATFORM_COLOR[p] : 'var(--text-3)'}; margin-top:8px">${hasId ? '✅ 연동됨' : '미연동'}</div>
+        </div>`;
+      }).join('')}
     </div>
   </section>
-`;
+`};
+
 
 const renderReviewsView = () => {
   const filtered = liveReviews.filter(r => r.platform === selectedPlatform && (reviewFilter === 'all' || !r.replied));

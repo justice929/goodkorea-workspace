@@ -377,7 +377,130 @@ class ReviewScraper:
             await page.close()
 
     async def scrape_yogiyo_reviews(self, shop_id):
-        return []
+        if not self.context:
+            print("[ERROR] Browser context not initialized.")
+            return []
+
+        parts = shop_id.split('|')
+        if len(parts) < 2 or not parts[0] or not parts[1]:
+            print("[WARNING] 요기요 로그인 정보 없음. 연동관리에서 ID|비밀번호 형식으로 입력하세요.")
+            return []
+
+        login_id, password = parts[0].strip(), parts[1].strip()
+        page = await self.context.new_page()
+
+        try:
+            # 1. 요기요 사장님 포털 로그인
+            await page.goto("https://ceo.yogiyo.co.kr/", wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(2)
+
+            id_input = page.locator(
+                'input[type="email"], input[type="tel"], input[name="username"], '
+                'input[name="id"], input[placeholder*="아이디"], input[placeholder*="이메일"]'
+            ).first
+            if await id_input.count() == 0:
+                print("[ERROR] 요기요 로그인 폼을 찾을 수 없습니다.")
+                return []
+            await id_input.fill(login_id)
+
+            pw_input = page.locator('input[type="password"]').first
+            await pw_input.fill(password)
+
+            await page.locator('button[type="submit"], button:has-text("로그인"), input[type="submit"]').first.click()
+            await asyncio.sleep(3)
+
+            if await page.locator('text=비밀번호가 틀렸습니다, text=아이디 또는 비밀번호, text=로그인에 실패').count() > 0:
+                print("[ERROR] 요기요 로그인 실패 — ID/비밀번호를 확인하세요.")
+                return []
+
+            print(f"[INFO] 요기요 로그인 성공: {page.url}")
+
+            # 2. 리뷰 관리 페이지 이동
+            review_urls = [
+                "https://ceo.yogiyo.co.kr/review",
+                "https://ceo.yogiyo.co.kr/reviews",
+                "https://ceo.yogiyo.co.kr/manage/review",
+            ]
+            for url in review_urls:
+                try:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=15000)
+                    await asyncio.sleep(2)
+                    if await page.locator('[class*="review"], [class*="Review"]').count() > 0:
+                        break
+                except:
+                    continue
+
+            if await page.locator('[class*="review"], [class*="Review"]').count() == 0:
+                try:
+                    menu = page.locator('a:has-text("리뷰"), button:has-text("리뷰"), a:has-text("후기")').first
+                    if await menu.is_visible():
+                        await menu.click()
+                        await asyncio.sleep(2)
+                except:
+                    pass
+
+            for _ in range(3):
+                try:
+                    more = page.locator('button:has-text("더보기"), button:has-text("더 보기")').first
+                    if await more.is_visible():
+                        await more.click()
+                        await asyncio.sleep(1.5)
+                    else:
+                        break
+                except:
+                    break
+
+            # 3. 리뷰 추출
+            results = []
+            selectors = [
+                '[class*="ReviewItem"]', '[class*="review-item"]', '[class*="reviewItem"]',
+                '[data-testid*="review"]', 'li:has([class*="star"])', 'article:has([class*="star"])',
+            ]
+            items = []
+            for sel in selectors:
+                items = await page.locator(sel).all()
+                if items:
+                    print(f"[INFO] 요기요 리뷰 셀렉터 적중: {sel} ({len(items)}개)")
+                    break
+
+            for el in items:
+                try:
+                    text_el = el.locator('[class*="content"], [class*="text"], [class*="comment"], [class*="body"], p').first
+                    text = await text_el.inner_text() if await text_el.count() > 0 else ""
+
+                    user_el = el.locator('[class*="user"], [class*="nick"], [class*="name"], strong').first
+                    user = await user_el.inner_text() if await user_el.count() > 0 else "익명"
+
+                    star_el = el.locator('[class*="star"], [class*="rating"], [aria-label*="점"]').first
+                    star_raw = await star_el.get_attribute("aria-label") or (await star_el.inner_text() if await star_el.count() > 0 else "5")
+                    star_match = re.search(r'\d+', star_raw)
+                    star = min(5, max(1, int(star_match.group()))) if star_match else 5
+
+                    reply_el = el.locator('[class*="reply"], [class*="answer"], [class*="Response"], [class*="ceo"]')
+                    has_reply = await reply_el.count() > 0
+
+                    if text.strip():
+                        results.append({
+                            "id": f"yogiyo_{len(results)}_{abs(hash(text))}",
+                            "platform": "요기요",
+                            "user": user.strip(),
+                            "text": text.strip(),
+                            "star": star,
+                            "time": "최근",
+                            "replied": has_reply
+                        })
+                except Exception as e:
+                    print(f"[DEBUG] 요기요 파싱 오류: {e}")
+                    continue
+
+            print(f"[INFO] 요기요 리뷰 {len(results)}개 수집")
+            return results[:25]
+
+        except Exception as e:
+            print(f"[ERROR] 요기요 스크래핑 실패: {e}")
+            return []
+        finally:
+            await page.close()
 
     async def scrape_google_reviews(self, place_id):
         return []

@@ -239,7 +239,7 @@ const renderReviewsView = () => {
 };
 
 // 로그인 방식이 필요한 플랫폼 (ID|비밀번호 형식으로 저장)
-const LOGIN_PLATFORMS: Platform[] = ['배달의민족', '쿠팡이츠'];
+const LOGIN_PLATFORMS: Platform[] = ['배달의민족', '쿠팡이츠', '요기요'];
 
 const renderConnectView = () => `
   <section class="tool-section" style="max-width: 700px;">

@@ -137,7 +137,7 @@
         </div>
         <input type="text" class="review-input"
           id="connect-id-${e}"
-          placeholder="${e} 가게 ID 또는 URL"
+          placeholder="${e===`구글`?`구글 지도 URL 또는 Place ID (ChIJ...)`:e===`네이버`?`네이버 플레이스 URL 또는 가게 ID`:e+` 가게 ID 또는 URL`}"
           value="${localStorage.getItem(`id-${e}`)||``}"
           style="margin-bottom:12px;">
         <button class="btn-sm btn-outline" onclick="saveConnectId('${e}')">저장</button>

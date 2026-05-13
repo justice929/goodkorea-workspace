@@ -195,6 +195,7 @@ const renderReviewsView = () => {
   
   return `
   <section class="tool-section">
+    <button class="btn-sm btn-outline" style="margin-bottom:24px;" onclick="navigateTo('main')">← 돌아가기</button>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px;">
       <div>
         <div class="section-tag">${selectedPlatform} 관리</div>

@@ -238,13 +238,35 @@ const renderReviewsView = () => {
   `;
 };
 
+// 로그인 방식이 필요한 플랫폼 (ID|비밀번호 형식으로 저장)
+const LOGIN_PLATFORMS: Platform[] = ['배달의민족'];
+
 const renderConnectView = () => `
   <section class="tool-section" style="max-width: 700px;">
     <div class="section-tag">연동 관리</div>
     <h2 style="font-size:28px; margin-bottom:8px;">🔌 플랫폼 연동 설정</h2>
-    <p style="color:var(--text-3); margin-bottom:40px;">각 플랫폼의 가게 ID 또는 URL을 입력하면 리뷰를 자동으로 가져옵니다.</p>
+    <p style="color:var(--text-3); margin-bottom:40px;">각 플랫폼 정보를 입력하면 리뷰를 자동으로 가져옵니다.</p>
 
-    ${PLATFORMS.map(p => `
+    ${PLATFORMS.map(p => {
+      if (LOGIN_PLATFORMS.includes(p)) {
+        const saved = (localStorage.getItem(`id-${p}`) || '').split('|');
+        return `
+        <div class="tool-card" style="margin-bottom:20px; padding:28px;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <span style="font-size:28px;">${PLATFORM_EMOJI[p]}</span>
+            <span style="font-weight:900; font-size:18px;">${p}</span>
+            <span style="font-size:11px; color:var(--text-3); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px;">사장님 계정 로그인 필요</span>
+          </div>
+          <label style="font-size:12px; color:var(--text-3); display:block; margin-bottom:4px;">사장님 로그인 ID (전화번호)</label>
+          <input type="text" class="review-input" id="connect-id-${p}"
+            placeholder="010-0000-0000" value="${saved[0] || ''}" style="margin-bottom:8px;">
+          <label style="font-size:12px; color:var(--text-3); display:block; margin-bottom:4px;">비밀번호</label>
+          <input type="password" class="review-input" id="connect-pw-${p}"
+            placeholder="비밀번호" value="${saved[1] || ''}" style="margin-bottom:12px;">
+          <button class="btn-sm btn-outline" onclick="saveConnectId('${p}')">저장</button>
+        </div>`;
+      }
+      return `
       <div class="tool-card" style="margin-bottom:20px; padding:28px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
           <span style="font-size:28px;">${PLATFORM_EMOJI[p]}</span>
@@ -256,8 +278,8 @@ const renderConnectView = () => `
           value="${localStorage.getItem(`id-${p}`) || ''}"
           style="margin-bottom:12px;">
         <button class="btn-sm btn-outline" onclick="saveConnectId('${p}')">저장</button>
-      </div>
-    `).join('')}
+      </div>`;
+    }).join('')}
 
     <div class="tool-card" style="padding:28px; margin-bottom:20px;">
       <div style="font-weight:900; margin-bottom:12px;">⚙️ 백엔드 서버 주소</div>
@@ -288,7 +310,12 @@ const renderConnectView = () => `
   showToast(`${platform} 리뷰를 가져오고 있습니다...`);
   try {
     const backendUrl = localStorage.getItem('backend-url') || 'http://localhost:8000';
-    const placeId = localStorage.getItem(`id-${platform}`) || '1876527582'; // Default sample
+    const savedId = localStorage.getItem(`id-${platform}`) || '';
+    const placeId = savedId || (platform === '네이버' ? '1876527582' : '');
+    if (!placeId) {
+      showToast(`${platform} 연동 정보가 없습니다. 연동관리에서 설정해주세요.`, true);
+      return;
+    }
     const res = await fetch(`${backendUrl}/scrape`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': BACKEND_API_KEY },
@@ -345,10 +372,15 @@ const renderConnectView = () => `
 
 (window as any).saveConnectId = (platform: Platform) => {
   const input = document.getElementById(`connect-id-${platform}`) as HTMLInputElement;
-  if (input) {
+  if (!input) return;
+  if (LOGIN_PLATFORMS.includes(platform)) {
+    const pwInput = document.getElementById(`connect-pw-${platform}`) as HTMLInputElement;
+    const pw = pwInput?.value || '';
+    localStorage.setItem(`id-${platform}`, `${input.value}|${pw}`);
+  } else {
     localStorage.setItem(`id-${platform}`, input.value);
-    showToast(`${platform} ID가 저장되었습니다.`);
   }
+  showToast(`${platform} 정보가 저장되었습니다.`);
 };
 
 (window as any).saveBackendUrl = () => {

@@ -65,10 +65,10 @@ class ReviewScraper:
             except:
                 await asyncio.sleep(8)
 
-            # 스크롤로 추가 리뷰 로딩
-            for _ in range(3):
+            # 스크롤로 추가 리뷰 로딩 (더 깊게 수집)
+            for _ in range(15):
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
 
             # 리뷰 아이템 수집
             items = await page.locator("li.place_apply_pui.EjjAW").all()
@@ -92,15 +92,16 @@ class ReviewScraper:
                     # 사장님 답글 여부
                     has_reply = await el.locator(".pui__J0tczd").count() > 0
 
-                    # 리뷰 이미지
+                    # 리뷰 이미지 (음식 사진 위주 수집)
                     images = []
-                    img_els = await el.locator("img[src*='pstatic.net']:not([src*='profile']):not([src*='avatar']):not([src*='sticker']):not([src*='static/image/emoji'])").all()
+                    img_els = await el.locator("img[src*='pstatic.net']:not([src*='profile']):not([src*='avatar']):not([src*='sticker']):not([src*='emoji'])").all()
                     for img in img_els:
                         src = await img.get_attribute("src")
-                        # 가로세로 크기가 너무 작은 것(아이콘 등)은 제외 (선택 사항이나 속성으로 필터링)
-                        if src and "type=f" in src: # 네이버 리뷰 사진은 보통 f타입 썸네일을 씀
+                        # 네이버 리뷰 사진 특징: type=f (썸네일) 또는 w (원본에 가까움)
+                        if src and ("type=f" in src or "type=w" in src):
                             images.append(src)
                         elif src and ("sticker" not in src.lower() and "emoji" not in src.lower()):
+                            # 스티커나 이모지가 아닌 이미지 주소만 포함
                             images.append(src)
 
                     results.append({
@@ -122,7 +123,7 @@ class ReviewScraper:
         finally:
             await page.close()
 
-        return results[:30]
+        return results
 
     async def post_reply(self, platform, review_id, reply_text, credentials=""):
         return False

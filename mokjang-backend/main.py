@@ -1,117 +1,84 @@
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Response, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
-from scraper import ReviewScraper
+from scraper_v2 import ReviewScraper
 from dotenv import load_dotenv
 import asyncio
 import os
+import sys
 
 load_dotenv()
 
 app = FastAPI()
 
-BACKEND_API_KEY = os.getenv("BACKEND_API_KEY")
-
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:4173",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:4173",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-API-Key"],
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-def verify_api_key(x_api_key: str = Header(...)):
-    if BACKEND_API_KEY and x_api_key != BACKEND_API_KEY:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-@app.get("/")
-async def root():
-    return {"status": "online", "message": "MokjangMoksai Backend is running!"}
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"\n[DEBUG] >>> {request.method} {request.url}")
+    return await call_next(request)
 
 scraper = ReviewScraper()
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(scraper.start())
+    print("[INFO] Starting application...")
+    try:
+        await scraper.start() # create_task 대신 직접 await 하여 에러 확인
+        print("[INFO] Application startup complete")
+    except Exception as e:
+        print(f"[CRITICAL] Startup failed: {e}")
+        sys.exit(1)
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    print("[INFO] Shutting down application...")
     await scraper.stop()
 
-ALLOWED_PLATFORMS = {"naver", "배달의민족", "쿠팡이츠", "요기요", "구글"}
+@app.get("/")
+async def root():
+    return {"status": "online"}
 
-class ScrapeRequest(BaseModel):
-    platform: str
-    target_id: str
-
-    @field_validator("platform")
-    @classmethod
-    def platform_must_be_valid(cls, v: str) -> str:
-        if v not in ALLOWED_PLATFORMS:
-            raise ValueError(f"지원하지 않는 플랫폼: {v}")
-        return v
-
-    @field_validator("target_id")
-    @classmethod
-    def target_id_must_be_safe(cls, v: str) -> str:
-        if len(v) > 200:
-            raise ValueError("target_id가 너무 깁니다")
-        return v.strip()
-
-class ReplyRequest(BaseModel):
-    platform: str
-    place_id: str
-    review_id: str
-    reply_text: str
-    credentials: str = ""  # "loginId|password" — 로그인이 필요한 플랫폼용
-
-    @field_validator("reply_text")
-    @classmethod
-    def reply_text_length(cls, v: str) -> str:
-        if len(v) > 1000:
-            raise ValueError("답글은 1000자를 초과할 수 없습니다")
-        return v.strip()
-
-@app.post("/scrape", dependencies=[Depends(verify_api_key)])
-async def scrape_reviews(req: ScrapeRequest):
+@app.post("/scrape")
+async def scrape_reviews(request: Request):
     try:
-        if req.platform == "naver":
-            reviews = await scraper.scrape_naver_reviews(req.target_id)
-        elif req.platform == "배달의민족":
-            reviews = await scraper.scrape_baemin_reviews(req.target_id)
-        elif req.platform == "쿠팡이츠":
-            reviews = await scraper.scrape_coupang_reviews(req.target_id)
-        elif req.platform == "요기요":
-            reviews = await scraper.scrape_yogiyo_reviews(req.target_id)
-        elif req.platform == "구글":
-            reviews = await scraper.scrape_google_reviews(req.target_id)
+        body = await request.json()
+        platform = body.get("platform")
+        target_id = body.get("target_id")
+        
+        print(f"[DEBUG] SCRAPE REQUEST: {platform} | ID: {target_id}")
+        
+        if platform in ["naver", "네이버"]:
+            reviews = await scraper.scrape_naver_reviews(target_id)
         else:
             reviews = []
+            
         return {"status": "success", "data": reviews}
     except Exception as e:
-        print(f"[ERROR] Scrape endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail="리뷰 조회 중 오류가 발생했습니다.")
+        print(f"[ERROR] Scrape Endpoint: {e}")
+        return {"status": "error", "detail": str(e)}
 
-@app.post("/reply", dependencies=[Depends(verify_api_key)])
-async def post_reply(req: ReplyRequest):
+@app.post("/reply")
+async def post_reply(request: Request):
     try:
-        success = await scraper.post_reply(req.platform, req.review_id, req.reply_text, req.credentials)
-        if success:
-            return {"status": "success", "message": f"Reply posted to {req.platform}"}
-        else:
-            raise HTTPException(status_code=500, detail="답글 등록에 실패했습니다.")
-    except HTTPException:
-        raise
+        body = await request.json()
+        success = await scraper.post_reply(
+            body.get("platform"), 
+            body.get("review_id"), 
+            body.get("reply_text"), 
+            body.get("credentials")
+        )
+        return {"status": "success" if success else "error"}
     except Exception as e:
-        print(f"[ERROR] Reply endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail="답글 등록 중 오류가 발생했습니다.")
+        return {"status": "error", "detail": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
+    print("[INFO] Running uvicorn server...")
     uvicorn.run(app, host="127.0.0.1", port=8000)

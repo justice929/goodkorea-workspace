@@ -1,7 +1,7 @@
 import './style.css'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // [Config]
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY;
@@ -19,6 +19,7 @@ interface Review {
   text: string;
   time: string;
   replied: boolean;
+  images?: string[];
 }
 
 // [State Management]
@@ -215,22 +216,39 @@ const renderReviewsView = () => {
       ` : filtered.map(r => `
         <div class="tool-card" style="margin-bottom:32px; padding:32px; border-left: 6px solid ${PLATFORM_COLOR[r.platform]}; border-radius:32px">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-            <span style="font-weight:900; font-size:18px;">${r.user}</span>
-            <span style="color:var(--yellow);">${'⭐'.repeat(r.star)}</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-weight:900; font-size:18px;">${r.user}</span>
+              <span style="font-size:12px; color:var(--text-3);">${r.time}</span>
+            </div>
+            <span style="color:var(--yellow); font-size:14px;">${'⭐'.repeat(r.star)}</span>
           </div>
-          <div style="background:rgba(0,0,0,0.3); padding:20px; border-radius:16px; margin-bottom:24px; line-height:1.7; color:var(--text-2); border:1px solid rgba(255,255,255,0.05)">
+
+          <!-- 리뷰 이미지 갤러리 추가 -->
+          ${r.images && r.images.length > 0 ? `
+            <div style="display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:8px;">
+              ${r.images.map(img => `
+                <img src="${img}" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,0.1)">
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <div style="background:rgba(0,0,0,0.3); padding:24px; border-radius:20px; margin-bottom:24px; line-height:1.7; color:var(--text-2); border:1px solid rgba(255,255,255,0.05); font-size:16px;">
             "${r.text}"
           </div>
           ${r.replied ? `
-            <div style="background:rgba(34,197,94,0.05); color:var(--green); padding:16px; border-radius:12px; font-size:14px; text-align:center; font-weight:700">
-              ✅ 답글 등록 완료
+            <div style="background:rgba(34,197,94,0.08); color:var(--green); padding:16px; border-radius:12px; font-size:14px; text-align:center; font-weight:700; border:1px solid var(--green)">
+              ✅ 플랫폼에 답글 등록됨
             </div>
           ` : `
-            <button class="generate-btn" onclick="handleCreateDraft('${r.id}')">✨ AI 답변 생성</button>
+            <button class="generate-btn" style="background:var(--grad-1)" onclick="handleCreateDraft('${r.id}')">✨ AI 맞춤 답글 생성하기</button>
           `}
-          <div id="reply-result-${r.id}" style="display:none; margin-top:24px;">
-            <textarea id="text-${r.id}" class="review-input" rows="6" style="margin-bottom:16px;"></textarea>
-            <button class="btn-sm btn-orange" style="width:100%; padding:16px;" onclick="handleFinalSubmit('${r.id}')">플랫폼에 등록</button>
+          <div id="reply-result-${r.id}" style="display:none; margin-top:24px; animation: slideUp 0.4s ease-out;">
+            <div style="font-size:12px; color:var(--text-3); margin-bottom:8px; font-weight:700;">🤖 AI 추천 답변 (자유롭게 수정 가능)</div>
+            <textarea id="text-${r.id}" class="review-input" rows="6" style="margin-bottom:16px; background:rgba(255,255,255,0.03); border-color:var(--grad-1)"></textarea>
+            <div style="display:flex; gap:12px;">
+              <button class="btn-sm btn-outline" style="flex:1; padding:16px;" onclick="document.getElementById('reply-result-${r.id}').style.display='none'">취소</button>
+              <button class="btn-sm btn-orange" style="flex:2; padding:16px; background:var(--grad-1); border:none;" onclick="handleFinalSubmit('${r.id}')">플랫폼에 즉시 등록</button>
+            </div>
           </div>
         </div>
       `).join('')}
@@ -321,33 +339,54 @@ const renderConnectView = () => `
 };
 
 (window as any).syncReviews = async (platform: Platform) => {
-  showToast(`${platform} 리뷰를 가져오고 있습니다...`);
+  showToast(`${platform} 리뷰 수집 중...`);
+  console.log(`[DEBUG] SYNC START: ${platform}`);
+  
   try {
     const backendUrl = localStorage.getItem('backend-url') || 'http://localhost:8000';
-    const savedId = localStorage.getItem(`id-${platform}`) || '';
-    const placeId = savedId || (platform === '네이버' ? '1876527582' : '');
+    let savedId = localStorage.getItem(`id-${platform}`) || '';
+    
+    // [강제 초기화] 잘못된 옛날 번호가 저장되어 있으면 즉시 삭제
+    if (savedId === '1876527582' || savedId === 'rnw8080') {
+      console.log("[DEBUG] Old bad ID detected. Clearing...");
+      localStorage.removeItem(`id-${platform}`);
+      savedId = '';
+    }
+    
+    const placeId = savedId || (platform === '네이버' ? '1078667259' : ''); // 락희차이나 진짜 ID
+    
     if (!placeId) {
-      showToast(`${platform} 연동 정보가 없습니다. 연동관리에서 설정해주세요.`, true);
+      showToast(`${platform} 연동 아이디를 설정해주세요.`, true);
       return;
     }
+
+    console.log(`[DEBUG] Fetching: ${backendUrl}/scrape | ID: ${placeId}`);
+    
     const res = await fetch(`${backendUrl}/scrape`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': BACKEND_API_KEY },
-      body: JSON.stringify({ platform: platform === '네이버' ? 'naver' : platform, target_id: placeId })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        platform: platform === '네이버' ? 'naver' : platform, 
+        target_id: placeId 
+      })
     });
+    
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    
     const result = await res.json();
+    console.log(`[DEBUG] Received Data:`, result);
+    
     if (result.status === 'success') {
-      liveReviews = result.data.map((r:any) => ({...r, platform}));
+      liveReviews = result.data.map((r: any) => ({ ...r, platform: platform }));
       updateUI();
-      showToast('리뷰 동기화 완료!');
+      showToast(`${platform} 리뷰 ${liveReviews.length}개 수집 완료!`);
+    } else {
+      showToast(`수집 실패: ${result.detail}`, true);
     }
   } catch (err) {
-    showToast('백엔드 연결 실패. 모의 데이터를 표시합니다.', true);
-    // Mock data for demo
-    liveReviews = [
-      { id: '1', platform, user:'고마워요', star:5, text:'진짜 맛있네요! 또 올게요.', time:'방금', replied: false },
-      { id: '2', platform, user:'단골님', star:4, text:'항상 잘 먹고 있습니다.', time:'어제', replied: true }
-    ];
+    console.error('[DEBUG] Sync Error:', err);
+    showToast('서버 연결 실패! 백엔드가 켜져있는지 확인해주세요.', true);
+    liveReviews = [];
     updateUI();
   }
 };

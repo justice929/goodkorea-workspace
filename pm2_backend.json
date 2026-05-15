@@ -3,7 +3,7 @@
     {
       "name": "haryul-bot",
       "script": "haryul_engine.js",
-      "cwd": "c:/Users/com/OneDrive/문서/OneDrive/바탕 화면/구글스티치/mokjang-moksai",
+      "cwd": "D:/구글스티치/mokjang-moksai",
       "watch": false,
       "env": {
         "NODE_ENV": "production"
@@ -13,7 +13,7 @@
       "name": "python-backend",
       "script": "main.py",
       "interpreter": "python",
-      "cwd": "c:/Users/com/OneDrive/문서/OneDrive/바탕 화면/구글스티치/mokjang-backend",
+      "cwd": "D:/구글스티치/mokjang-backend",
       "watch": false,
       "env": {
         "PYTHONUNBUFFERED": "1"

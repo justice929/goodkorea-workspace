@@ -94,10 +94,14 @@ class ReviewScraper:
 
                     # 리뷰 이미지
                     images = []
-                    img_els = await el.locator("img[src*='pstatic.net']:not([src*='profile']):not([src*='avatar'])").all()
+                    img_els = await el.locator("img[src*='pstatic.net']:not([src*='profile']):not([src*='avatar']):not([src*='sticker']):not([src*='static/image/emoji'])").all()
                     for img in img_els:
                         src = await img.get_attribute("src")
-                        if src: images.append(src)
+                        # 가로세로 크기가 너무 작은 것(아이콘 등)은 제외 (선택 사항이나 속성으로 필터링)
+                        if src and "type=f" in src: # 네이버 리뷰 사진은 보통 f타입 썸네일을 씀
+                            images.append(src)
+                        elif src and ("sticker" not in src.lower() and "emoji" not in src.lower()):
+                            images.append(src)
 
                     results.append({
                         "id": f"naver_{len(results)}_{abs(hash(text))}",

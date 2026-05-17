@@ -92,17 +92,8 @@ class ReviewScraper:
                     # 사장님 답글 여부
                     has_reply = await el.locator(".pui__J0tczd").count() > 0
 
-                    # 리뷰 이미지 (음식 사진 위주 수집)
+                    # 리뷰 이미지 (무거워짐 방지를 위해 수집 포기)
                     images = []
-                    img_els = await el.locator("img[src*='pstatic.net']:not([src*='profile']):not([src*='avatar']):not([src*='sticker']):not([src*='emoji'])").all()
-                    for img in img_els:
-                        src = await img.get_attribute("src")
-                        # 네이버 리뷰 사진 특징: type=f (썸네일) 또는 w (원본에 가까움)
-                        if src and ("type=f" in src or "type=w" in src):
-                            images.append(src)
-                        elif src and ("sticker" not in src.lower() and "emoji" not in src.lower()):
-                            # 스티커나 이모지가 아닌 이미지 주소만 포함
-                            images.append(src)
 
                     results.append({
                         "id": f"naver_{len(results)}_{abs(hash(text))}",

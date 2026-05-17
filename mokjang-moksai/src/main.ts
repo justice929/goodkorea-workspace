@@ -1,7 +1,7 @@
 import './style.css'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // [Config]
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY;
@@ -223,14 +223,7 @@ const renderReviewsView = () => {
             <span style="color:var(--yellow); font-size:14px;">${'⭐'.repeat(r.star)}</span>
           </div>
 
-          <!-- 리뷰 이미지 갤러리 추가 -->
-          ${r.images && r.images.length > 0 ? `
-            <div style="display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:8px;">
-              ${r.images.map(img => `
-                <img src="${img}" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,0.1)">
-              `).join('')}
-            </div>
-          ` : ''}
+          <!-- 이미지 기능 제외 (성능 최적화) -->
 
           <div style="background:rgba(0,0,0,0.3); padding:24px; border-radius:20px; margin-bottom:24px; line-height:1.7; color:var(--text-2); border:1px solid rgba(255,255,255,0.05); font-size:16px;">
             "${r.text}"
